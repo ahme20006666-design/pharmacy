@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - صيدلية البلينا</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f8fafc; padding: 20px; color: #1e293b; }
+        .header { max-width: 800px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
+        .badge { background: #fee2e2; color: #ef4444; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .order-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
+        .order-top { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; font-weight: bold; }
+        .order-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569; margin-bottom: 12px; }
+        .actions { display: flex; gap: 10px; }
+        .btn-assign { flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn-call { background: #e2e8f0; color: #1e293b; text-decoration: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>🏪 لوحة متابعة الطلبات (البلينا)</h2>
+    <span class="badge">● بث مباشر متصل</span>
+</div>
+
+<div class="container" id="ordersList">
+    <p style="text-align: center; color: #94a3b8; margin-top: 40px;">جاري تحميل الطلبات...</p>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAF--GbgtXOFouzlg082zwR_UXVrtDdxmI",
+      authDomain: "app1-e712c.firebaseapp.com",
+      projectId: "app1-e712c",
+      storageBucket: "app1-e712c.firebasestorage.app",
+      messagingSenderId: "413212540461",
+      appId: "1:413212540461:web:725c7295ce6de8a00f82a4",
+      databaseURL: "https://app1-e712c-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    db.ref('orders').on('value', snapshot => {
+        const data = snapshot.val();
+        const container = document.getElementById('ordersList');
+        if (!data) {
+            container.innerHTML = '<p style="text-align:center; color:#94a3b8;">لا توجد طلبات حالياً</p>';
+            return;
+        }
+
+        let html = '';
+        Object.keys(data).reverse().forEach(key => {
+            const item = data[key];
+            const isAssigned = item.status === 'مع المندوب';
+            html += `
+            <div class="order-card" style="border-right: 5px solid ${isAssigned ? '#3b82f6' : '#059669'}">
+                <div class="order-top">
+                    <span>طلب: ${item.name}</span>
+                    <span style="color: ${isAssigned ? '#2563eb' : '#059669'};">${item.status}</span>
+                </div>
+                <div class="order-info">
+                    <div>📱 <strong>الهاتف:</strong> ${item.phone}</div>
+                    <div>📍 <strong>العنوان:</strong> ${item.address}</div>
+                    <div>⏱️ <strong>الوقت:</strong> ${item.time}</div>
+                    <div>🌐 <strong>الإحداثيات:</strong> ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
+                </div>
+                <div class="actions">
+                    <button class="btn-assign" onclick="assignDriver('${key}')">🚴 ${isAssigned ? 'إعادة التوجيه للمندوب' : 'إسناد للمندوب الآن'}</button>
+                    <a href="tel:${item.phone}" class="btn-call">📞 اتصال</a>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    });
+
+    function assignDriver(orderId) {
+        db.ref('orders/' + orderId).update({
+            status: 'مع المندوب'
+        }).then(() => alert('تم إسناد الطلب للمندوب! الخريطة ستظهر عنده فوراً.'));
+    }
+</script>
+</body>
+</html>

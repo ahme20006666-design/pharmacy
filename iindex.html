@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صيدلية البلينا - طلب دواء</title>
+    <!-- مكتبة الخرائط لتحديد المكان يدوياً إذا فشل الـ GPS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #f0fdf4; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        .card { background: white; width: 100%; max-width: 420px; border-radius: 24px; box-shadow: 0 10px 25px rgba(5,150,105,0.1); border: 1px solid #d1fae5; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 20px; text-align: center; }
+        .content { padding: 18px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; color: #374151; margin-bottom: 4px; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 14px; outline: none; }
+        
+        .btn-gps { width: 100%; background: #ecfdf5; color: #059669; border: 2px dashed #059669; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
+        .gps-status { font-size: 11px; text-align: center; margin-bottom: 8px; font-weight: bold; display: none; }
+        
+        /* خريطة اختيار المكان يدوياً في القرى */
+        #clientMap { width: 100%; height: 180px; border-radius: 12px; margin-bottom: 12px; border: 1.5px solid #cbd5e1; }
+        
+        .btn-submit { width: 100%; background: #059669; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; }
+        .call-card { margin-top: 12px; padding: 10px; background: #fef3c7; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .call-btn { background: #d97706; color: white; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div style="font-size: 32px; margin-bottom: 2px;">💊</div>
+        <h2>صيدلية البلينا</h2>
+        <p style="font-size: 12px; opacity: 0.9;">التوصيل لجميع القرى والنجوع</p>
+    </div>
+
+    <div class="content">
+        <div class="form-group">
+            <label>اسم العميل</label>
+            <input type="text" id="custName" placeholder="الاسم بالكامل">
+        </div>
+        <div class="form-group">
+            <label>رقم الهاتف</label>
+            <input type="tel" id="custPhone" placeholder="010xxxxxxxx">
+        </div>
+        <div class="form-group">
+            <label>اسم القرية أو الشارع</label>
+            <input type="text" id="custAddress" placeholder="مثال: قرية برخيل / بجوار العمدة">
+        </div>
+
+        <button class="btn-gps" onclick="getGPS()">📍 اضغط هنا لتحديد موقعي التلقائي (GPS)</button>
+        <div id="gpsStatus" class="gps-status"></div>
+
+        <p style="font-size: 11px; color: #64748b; margin-bottom: 5px; text-align: center;">أو حدد مكانك بدقة بالضغط على الخريطة:</p>
+        <div id="clientMap"></div>
+
+        <button class="btn-submit" onclick="sendOrder()">تأكيد وإرسال الطلب 🚀</button>
+
+        <div class="call-card">
+            <div>
+                <p style="font-size: 11px; color: #92400e; font-weight: bold;">للطلب الهاتفي:</p>
+                <p style="font-size: 13px; font-weight: bold; color: #78350f;">01012345678</p>
+            </div>
+            <a href="tel:01012345678" class="call-btn">📞 اتصال</a>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAF--GbgtXOFouzlg082zwR_UXVrtDdxmI",
+      authDomain: "app1-e712c.firebaseapp.com",
+      projectId: "app1-e712c",
+      storageBucket: "app1-e712c.firebasestorage.app",
+      messagingSenderId: "413212540461",
+      appId: "1:413212540461:web:725c7295ce6de8a00f82a4",
+      databaseURL: "https://app1-e712c-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // إحداثيات مركز البلينا كافتراضي
+    let clientLat = 26.2345;
+    let clientLng = 31.9985;
+
+    // خريطة العميل التفاعلية
+    const clientMap = L.map('clientMap').setView([clientLat, clientLng], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18
+    }).addTo(clientMap);
+
+    let marker = L.marker([clientLat, clientLng], {draggable: true}).addTo(clientMap);
+    marker.bindPopup("مكان بيتك (اسحبه أو اضغط لتغييره)").openPopup();
+
+    // تحديث الإحداثيات إذا قام العميل بتحريك الدبوس أو الضغط على الخريطة
+    clientMap.on('click', function(e) {
+        clientLat = e.latlng.lat;
+        clientLng = e.latlng.lng;
+        marker.setLatLng([clientLat, clientLng]);
+    });
+
+    marker.on('dragend', function(e) {
+        const pos = marker.getLatLng();
+        clientLat = pos.lat;
+        clientLng = pos.lng;
+    });
+
+    function getGPS() {
+        const status = document.getElementById('gpsStatus');
+        status.style.display = 'block';
+        status.innerText = "جاري التقاط إحداثيات الـ GPS...";
+        status.style.color = "#059669";
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    clientLat = pos.coords.latitude;
+                    clientLng = pos.coords.longitude;
+                    clientMap.setView([clientLat, clientLng], 15);
+                    marker.setLatLng([clientLat, clientLng]);
+                    status.innerText = `✅ تم التقاط موقعك بدقة عالية!`;
+                },
+                () => {
+                    status.innerText = "⚠️ تعذر جلب الـ GPS تلقائياً، حدد مكانك يدوياً على الخريطة بالأسفل";
+                    status.style.color = "#d97706";
+                },
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+    }
+
+    function sendOrder() {
+        const name = document.getElementById('custName').value.trim();
+        const phone = document.getElementById('custPhone').value.trim();
+        const address = document.getElementById('custAddress').value.trim();
+
+        if (!name || !phone) {
+            alert('يرجى كتابة الاسم ورقم الموبايل');
+            return;
+        }
+
+        const newOrderRef = db.ref('orders').push();
+        newOrderRef.set({
+            name: name,
+            phone: phone,
+            address: address || "قرية تابعة للبلينا",
+            lat: clientLat,
+            lng: clientLng,
+            status: "جديد",
+            time: new Date().toLocaleTimeString('ar-EG')
+        }).then(() => {
+            alert('✅ تم إرسال الطلب بنجاح للإدارة!');
+            document.getElementById('custName').value = '';
+            document.getElementById('custPhone').value = '';
+            document.getElementById('custAddress').value = '';
+        });
+    }
+</script>
+</body>
+</html>
