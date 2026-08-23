@@ -2,63 +2,105 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صيدلية البلينا - طلب دواء</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>صيدلية د. هشام إسماعيل - طلب دواء</title>
+    
+    <!-- خطوط عربية عريضة جداً واحترافية -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@800;900&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f0fdf4; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
-        .card { background: white; width: 100%; max-width: 420px; border-radius: 24px; box-shadow: 0 10px 25px rgba(5,150,105,0.1); border: 1px solid #d1fae5; overflow: hidden; }
-        .header { background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 20px; text-align: center; }
-        .content { padding: 18px; }
-        .form-group { margin-bottom: 10px; }
-        .form-group label { display: block; font-size: 13px; font-weight: bold; color: #374151; margin-bottom: 4px; }
-        .form-group input { width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 14px; outline: none; }
-        .btn-gps { width: 100%; background: #ecfdf5; color: #059669; border: 2px dashed #059669; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; font-size: 13px; }
-        .gps-status { font-size: 11px; text-align: center; margin-bottom: 8px; font-weight: bold; display: none; }
-        #clientMap { width: 100%; height: 200px; border-radius: 12px; margin-bottom: 12px; border: 1.5px solid #cbd5e1; }
-        .btn-submit { width: 100%; background: #059669; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: bold; cursor: pointer; }
-        .call-card { margin-top: 12px; padding: 10px; background: #fef3c7; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .call-btn { background: #d97706; color: white; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', Tahoma, sans-serif; }
+        html, body { height: 100%; overflow: hidden; background: #eff6ff; }
+        body { display: flex; justify-content: center; align-items: center; padding: 5px; }
+        .app-card { background: #ffffff; width: 100%; max-width: 420px; height: 100%; max-height: 98vh; border-radius: 20px; box-shadow: 0 8px 25px rgba(30,64,175,0.15); border: 1.5px solid #dbeafe; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 12px; }
+        
+        /* الهيدر العلوي */
+        .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 7px 12px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+        .header h2 { font-size: 14.5px; font-weight: 800; }
+        .header p { font-size: 10px; opacity: 0.9; margin-top: 1px; }
+        
+        /* كلمة الدكتور عريضة وضخمة جداً بنبض قوي */
+        .doctor-title-box { text-align: center; margin: 2px 0; }
+        .doctor-title {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+            font-size: clamp(38px, 11vw, 48px);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            animation: pulse-doctor-giant 1.8s infinite ease-in-out;
+        }
+
+        @keyframes pulse-doctor-giant {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 3px 5px rgba(30, 64, 175, 0.4));
+            }
+            50% {
+                transform: scale(1.12);
+                filter: drop-shadow(0 6px 16px rgba(37, 99, 235, 0.85));
+            }
+        }
+
+        .form-area { display: flex; flex-direction: column; gap: 4px; }
+        .input-box { width: 100%; padding: 6px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 11.5px; outline: none; background: #f8fafc; }
+        .input-box:focus { border-color: #2563eb; background: #ffffff; }
+        .btn-gps { width: 100%; background: #eff6ff; color: #1e40af; border: 1.5px dashed #3b82f6; padding: 6px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .gps-status { font-size: 9.5px; text-align: center; font-weight: bold; color: #1d4ed8; display: none; }
+        #clientMap { width: 100%; height: 105px; border-radius: 10px; border: 1.5px solid #bfdbfe; }
+        
+        .actions { display: flex; gap: 6px; margin-top: 3px; }
+        .btn-submit { flex: 2; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; border: none; padding: 9px; border-radius: 10px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(29,78,216,0.3); }
+        .btn-cancel { flex: 1; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 9px; border-radius: 10px; font-size: 11px; font-weight: bold; cursor: pointer; display: none; }
+        
+        .pulse-footer { animation: pulse-glow 2.5s infinite ease-in-out; text-align: center; padding-top: 4px; border-top: 1px dashed #e2e8f0; }
+        .pulse-footer .dr { font-size: 11.5px; font-weight: 800; color: #1e3a8a; }
+        .pulse-footer .dev { font-size: 10px; font-weight: 700; color: #2563eb; }
+        
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 4px rgba(37,99,235,0.3); }
+            50% { transform: scale(1.03); text-shadow: 0 0 10px rgba(37,99,235,0.7); }
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="app-card">
     <div class="header">
-        <div style="font-size: 32px; margin-bottom: 2px;">💊</div>
-        <h2>صيدلية البلينا</h2>
-        <p style="font-size: 12px; opacity: 0.9;">التوصيل لجميع قرى ونجوع البلينا</p>
+        <h2>💊 صيدلية د. هشام إسماعيل</h2>
+        <p>خدمة التوصيل السريع لجميع القرى والنجوع</p>
     </div>
 
-    <div class="content">
-        <div class="form-group">
-            <label>اسم العميل</label>
-            <input type="text" id="custName" placeholder="الاسم بالكامل">
-        </div>
-        <div class="form-group">
-            <label>رقم الهاتف</label>
-            <input type="tel" id="custPhone" placeholder="010xxxxxxxx">
-        </div>
-        <div class="form-group">
-            <label>اسم القرية أو الشارع</label>
-            <input type="text" id="custAddress" placeholder="مثال: الحرجة / بجوار المسجد">
-        </div>
+    <!-- كلمة الدكتور ضخمة وعريضة ونابضة -->
+    <div class="doctor-title-box">
+        <h1 class="doctor-title">الدكتور</h1>
+    </div>
 
+    <div class="form-area">
+        <input type="text" id="custName" class="input-box" placeholder="اسم العميل بالكامل">
+        <input type="tel" id="custPhone" class="input-box" placeholder="رقم الهاتف (010xxxxxxxx)">
+        <input type="text" id="custAddress" class="input-box" placeholder="القرية / النجع / علامة مميزة">
+        
         <button class="btn-gps" onclick="getGPS()">📍 تحديد موقعي الدقيق (GPS)</button>
         <div id="gpsStatus" class="gps-status"></div>
-
-        <p style="font-size: 11px; color: #64748b; margin-bottom: 5px; text-align: center;">أو حدد مكان بيتك على الخريطة:</p>
         <div id="clientMap"></div>
+    </div>
 
-        <button class="btn-submit" onclick="sendOrder()">تأكيد وإرسال الطلب 🚀</button>
+    <div>
+        <div class="actions">
+            <button class="btn-submit" id="submitBtn" onclick="sendOrder()">تأكيد وإرسال الطلب 🚀</button>
+            <button class="btn-cancel" id="cancelBtn" onclick="cancelMyOrder()">❌ إلغاء الطلب</button>
+        </div>
 
-        <div class="call-card">
-            <div>
-                <p style="font-size: 11px; color: #92400e; font-weight: bold;">صيدلية البلينا:</p>
-                <p style="font-size: 13px; font-weight: bold; color: #78350f;">01012345678</p>
-            </div>
-            <a href="tel:01012345678" class="call-btn">📞 اتصال مباشر</a>
+        <div class="pulse-footer">
+            <div class="dr">صيدلية DR: Hisham Ismail</div>
+            <div class="dev">By / ENG: Ahmed Al sayyad</div>
         </div>
     </div>
 </div>
@@ -80,51 +122,33 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إحداثيات الصيدلية الجديدة (الحرجة قبلي) كبداية افتراضية
     let clientLat = 26.201767;
     let clientLng = 31.938367;
 
-    const clientMap = L.map('clientMap').setView([clientLat, clientLng], 14);
+    document.getElementById('custName').value = localStorage.getItem('cust_name') || '';
+    document.getElementById('custPhone').value = localStorage.getItem('cust_phone') || '';
+    checkActiveOrder();
 
-    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-    }).addTo(clientMap);
-
+    const clientMap = L.map('clientMap', { zoomControl: false }).setView([clientLat, clientLng], 14);
+    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }).addTo(clientMap);
     let marker = L.marker([clientLat, clientLng], {draggable: true}).addTo(clientMap);
-    marker.bindPopup("منزلي 🏠 (اسحبه أو اضغط للتعديل)").openPopup();
+    marker.bindPopup("منزلي 🏠 (اسحبه لتحديد الدقة)").openPopup();
 
-    clientMap.on('click', function(e) {
-        clientLat = e.latlng.lat;
-        clientLng = e.latlng.lng;
-        marker.setLatLng([clientLat, clientLng]);
-    });
-
-    marker.on('dragend', function(e) {
-        const pos = marker.getLatLng();
-        clientLat = pos.lat;
-        clientLng = pos.lng;
-    });
+    clientMap.on('click', e => { clientLat = e.latlng.lat; clientLng = e.latlng.lng; marker.setLatLng([clientLat, clientLng]); });
+    marker.on('dragend', () => { const p = marker.getLatLng(); clientLat = p.lat; clientLng = p.lng; });
 
     function getGPS() {
-        const status = document.getElementById('gpsStatus');
-        status.style.display = 'block';
-        status.innerText = "جاري التقاط إحداثيات GPS...";
-        status.style.color = "#059669";
-
+        const s = document.getElementById('gpsStatus');
+        s.style.display = 'block'; s.innerText = "جاري التقاط إحداثيات GPS...";
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    clientLat = pos.coords.latitude;
-                    clientLng = pos.coords.longitude;
+                pos => {
+                    clientLat = pos.coords.latitude; clientLng = pos.coords.longitude;
                     clientMap.setView([clientLat, clientLng], 16);
                     marker.setLatLng([clientLat, clientLng]);
-                    status.innerText = `✅ تم تحديد موقعك بدقة (${Math.round(pos.coords.accuracy)} متر)`;
+                    s.innerText = `✅ تم تحديد الموقع بدقة (${Math.round(pos.coords.accuracy)} م)`;
                 },
-                () => {
-                    status.innerText = "⚠️ تعذر أخذ الموقع، حدد مكانك يدوياً على الخريطة";
-                    status.style.color = "#d97706";
-                },
+                () => { s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; },
                 { enableHighAccuracy: true }
             );
         }
@@ -134,29 +158,43 @@
         const name = document.getElementById('custName').value.trim();
         const phone = document.getElementById('custPhone').value.trim();
         const address = document.getElementById('custAddress').value.trim();
+        if (!name || !phone) { alert('يرجى كتابة الاسم ورقم الهاتف'); return; }
 
-        if (!name || !phone) {
-            alert('يرجى كتابة الاسم ورقم الموبايل');
-            return;
-        }
+        localStorage.setItem('cust_name', name);
+        localStorage.setItem('cust_phone', phone);
 
-        const newOrderRef = db.ref('orders').push();
-        newOrderRef.set({
-            name: name,
-            phone: phone,
-            address: address || "البلينا",
-            lat: clientLat,
-            lng: clientLng,
-            status: "جديد",
+        const newRef = db.ref('orders').push();
+        newRef.set({
+            name: name, phone: phone, address: address || "الحرجة / البلينا",
+            lat: clientLat, lng: clientLng, status: "جديد",
             time: new Date().toLocaleTimeString('ar-EG')
         }).then(() => {
-            alert('✅ تم إرسال الطلب للإدارة بنجاح!');
-            document.getElementById('custName').value = '';
-            document.getElementById('custPhone').value = '';
-            document.getElementById('custAddress').value = '';
-        }).catch(err => {
-            alert('خطأ في الاتصال: ' + err.message);
+            localStorage.setItem('my_active_order', newRef.key);
+            alert('🚀 تم إرسال طلبك لصيدلية د. هشام إسماعيل بنجاح!');
+            checkActiveOrder();
         });
+    }
+
+    function checkActiveOrder() {
+        const orderId = localStorage.getItem('my_active_order');
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (orderId) {
+            cancelBtn.style.display = 'block';
+        } else {
+            cancelBtn.style.display = 'none';
+        }
+    }
+
+    function cancelMyOrder() {
+        const orderId = localStorage.getItem('my_active_order');
+        if (!orderId) return;
+        if (confirm('هل أنت متأكد من رغبتك في إلغاء هذا الطلب؟')) {
+            db.ref('orders/' + orderId).remove().then(() => {
+                localStorage.removeItem('my_active_order');
+                alert('تم إلغاء الطلب بنجاح ❌');
+                checkActiveOrder();
+            });
+        }
     }
 </script>
 </body>
