@@ -5,46 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تطبيق المندوب - صيدلية البلينا</title>
     
-    <!-- مكتبة الخرائط والمسارات -->
+    <!-- مكتبة الخرائط والمسارات المجانية -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: #0f172a; color: #f8fafc; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 460px; }
+        .container { width: 100%; max-width: 450px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .badge { background: #064e3b; color: #34d399; padding: 5px 12px; border-radius: 12px; font-size: 13px; font-weight: bold; }
-        
-        .card { background: #1e293b; border-radius: 20px; padding: 18px; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .order-meta { background: #0f172a; padding: 12px 14px; border-radius: 12px; margin: 12px 0; border: 1px solid #334155; }
-        .order-meta p { font-size: 13px; color: #cbd5e1; margin-bottom: 6px; }
-        .order-meta strong { color: #f8fafc; }
-
-        #map { width: 100%; height: 350px; border-radius: 16px; margin: 12px 0; border: 2px solid #334155; }
+        .card { background: #1e293b; border-radius: 20px; padding: 18px; border: 1px solid #334155; }
+        #map { width: 100%; height: 350px; border-radius: 14px; margin: 12px 0; border: 1px solid #475569; z-index: 1; }
         .leaflet-routing-container { display: none !important; }
-
-        .stats { display: flex; justify-content: space-around; background: #0f172a; padding: 12px; border-radius: 14px; margin-bottom: 14px; border: 1px solid #334155; }
-        .stat-box { text-align: center; }
-        .stat-box span { font-size: 11px; color: #94a3b8; display: block; }
-        .stat-box strong { font-size: 16px; margin-top: 2px; display: block; }
-
-        .btn-call { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: #334155; color: white; text-decoration: none; padding: 13px; border-radius: 12px; font-weight: bold; font-size: 14px; margin-bottom: 10px; transition: 0.2s; }
-        .btn-call:active { background: #475569; }
-        .btn-done { width: 100%; background: #10b981; color: #064e3b; border: none; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .btn-done:active { transform: scale(0.98); }
+        .stats { display: flex; justify-content: space-around; background: #0f172a; padding: 10px; border-radius: 12px; margin-bottom: 12px; }
+        .btn-done { width: 100%; background: #10b981; color: #064e3b; border: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .btn-call { display: block; text-align: center; background: #334155; color: white; text-decoration: none; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2 style="color: #34d399; font-size: 20px;">🚴 كابتن التوصيل (البلينا)</h2>
-        <span class="badge">متصل 🟢</span>
+        <h2 style="color: #34d399;">🚴 كابتن التوصيل (البلينا)</h2>
+        <span style="background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 10px; font-size: 12px;">متصل 🟢</span>
     </div>
 
     <div class="card" id="driverBox">
-        <p style="text-align: center; color: #94a3b8; padding: 30px 0;">في انتظار استلام أوردرات جديدة من الإدارة...</p>
+        <p style="text-align: center; color: #94a3b8;">في انتظار إسناد طلبات من الإدارة...</p>
     </div>
 </div>
 
@@ -52,7 +39,7 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-<!-- Leaflet & Routing Machine -->
+<!-- Leaflet & Routing SDK -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
@@ -69,92 +56,64 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إحداثيات الصيدلية في وسط مركز البلينا
-    const pharmacyLoc = [26.2345, 31.9985];
-    let map = null;
-    let routingControl = null;
+    const pharmacyLoc = [26.2345, 31.9985]; // إحداثيات الصيدلية في وسط البلينا
+    let map = null, routingControl = null;
 
     db.ref('orders').on('value', snapshot => {
         const data = snapshot.val();
-        const box = document.getElementById('driverBox');
-
-        if (!data) {
-            box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px 0;">لا توجد طلبات مسجلة حالياً</p>';
-            return;
-        }
+        if (!data) return;
 
         let activeKey = null;
         Object.keys(data).forEach(key => {
-            if (data[key].status === 'مع المندوب') {
-                activeKey = key;
-            }
+            if (data[key].status === 'مع المندوب') activeKey = key;
         });
 
+        const box = document.getElementById('driverBox');
         if (!activeKey) {
-            box.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px 0;">لا توجد مهام نشطة.. في انتظار إسناد أوردر من الإدارة 🚴</p>';
+            box.innerHTML = '<p style="text-align:center; color:#94a3b8;">لا توجد مهام حالية.. في انتظار أوردر جديد 🚴</p>';
             return;
         }
 
         const activeOrder = data[activeKey];
         box.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="color: #f8fafc; font-size: 17px;">📦 طلب توصيل جديد</h3>
-                <span style="background:#1e3a8a; color:#93c5fd; padding:3px 8px; border-radius:8px; font-size:11px;">مهمة جارية</span>
-            </div>
-
-            <div class="order-meta">
-                <p>👤 <strong>العميل:</strong> ${activeOrder.name}</p>
-                <p>📍 <strong>العنوان:</strong> ${activeOrder.address}</p>
-                <p>🕒 <strong>وقت الطلب:</strong> ${activeOrder.time || 'الآن'}</p>
-            </div>
+            <h3 style="color: #f8fafc; margin-bottom: 5px;">📦 طلب توصيل جديد</h3>
+            <p style="font-size: 13px; color: #cbd5e1;">👤 <strong>العميل:</strong> ${activeOrder.name}</p>
+            <p style="font-size: 13px; color: #cbd5e1;">📍 <strong>العنوان:</strong> ${activeOrder.address}</p>
             
             <div id="map"></div>
 
             <div class="stats">
-                <div class="stat-box">
-                    <span>المسافة الإجمالية</span>
-                    <strong id="distText" style="color:#38bdf8;">--</strong>
-                </div>
-                <div class="stat-box">
-                    <span>الوقت المتوقع</span>
-                    <strong id="timeText" style="color:#34d399;">--</strong>
-                </div>
-                <div class="stat-box">
-                    <span>حالة المسار</span>
-                    <strong style="color:#f59e0b;">الخط الأزرق 🛣️</strong>
-                </div>
+                <div><span>المسافة:</span> <strong id="distText" style="color:#38bdf8;">--</strong></div>
+                <div><span>الوقت:</span> <strong id="timeText" style="color:#34d399;">--</strong></div>
             </div>
 
-            <a href="tel:${activeOrder.phone}" class="btn-call">📞 اتصال بالعميل (${activeOrder.phone})</a>
-            <button class="btn-done" onclick="finishDelivery('${activeKey}')">✅ تم تسليم الأوردر للعميل</button>
+            <a href="tel:${activeOrder.phone}" class="btn-call">📞 اتصال بالعميل</a>
+            <button class="btn-done" onclick="finishDelivery('${activeKey}')">✅ تم تسليم الأوردر</button>
         `;
 
         renderRoute(activeOrder.lat, activeOrder.lng);
     });
 
     function renderRoute(destLat, destLng) {
-        if (map) {
-            map.remove();
-        }
-
-        // إنشاء خريطة تبدأ بتكبير عام للمركز وقراه
+        if (map) map.remove();
+        
+        // ضبط الرؤية المبدئية على صيدلية البلينا
         map = L.map('map').setView(pharmacyLoc, 12);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap',
-            maxZoom: 19,
-            minZoom: 9
+        // خريطة جوجل الشاملة للقرى والنجوع مع أقصى زوم متاح
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
-        const startPoint = L.latLng(pharmacyLoc[0], pharmacyLoc[1]);
-        const endPoint = L.latLng(destLat, destLng);
+        L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 صيدلية البلينا').openPopup();
+        L.marker([destLat, destLng]).addTo(map).bindPopup('📍 مكان العميل بالقرية');
 
-        L.marker(startPoint).addTo(map).bindPopup('🏪 صيدلية البلينا (نقطة الانطلاق)').openPopup();
-        L.marker(endPoint).addTo(map).bindPopup('📍 مكان العميل (التسليم)');
-
-        // رسم الخط الأزرق للتوصيل
         routingControl = L.Routing.control({
-            waypoints: [startPoint, endPoint],
+            waypoints: [
+                L.latLng(pharmacyLoc[0], pharmacyLoc[1]),
+                L.latLng(destLat, destLng)
+            ],
             lineOptions: {
                 styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }]
             },
@@ -163,13 +122,9 @@
             }),
             addWaypoints: false,
             draggableWaypoints: false,
-            fitSelectedRoutes: true,
+            fitSelectedRoutes: false, // زوم وتحريك حر بدون قفل
             show: false
         }).addTo(map);
-
-        // ضبط زاوية الرؤية تلقائياً لتشمل كامل الطريق بين الصيدلية وأي قرية
-        const bounds = L.latLngBounds([startPoint, endPoint]);
-        map.fitBounds(bounds, { padding: [50, 50] });
 
         routingControl.on('routesfound', e => {
             const summary = e.routes[0].summary;
@@ -179,13 +134,9 @@
     }
 
     function finishDelivery(orderId) {
-        if (confirm('هل أنت متأكد من إتمام تسليم الأوردر؟')) {
-            db.ref('orders/' + orderId).update({
-                status: 'تم التسليم بنجاح'
-            }).then(() => {
-                alert('عاش يا بطل! تم إنهاء التوصيل.');
-            });
-        }
+        db.ref('orders/' + orderId).update({
+            status: 'تم التسليم بنجاح'
+        }).then(() => alert('عاش يا بطل! تم إنهاء التوصيل.'));
     }
 </script>
 </body>
