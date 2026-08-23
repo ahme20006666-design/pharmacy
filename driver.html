@@ -25,7 +25,7 @@
 
 <div class="container">
     <div class="header">
-        <h2 style="color: #34d399;">🚴 كابتن التوصيل</h2>
+        <h2 style="color: #34d399;">🚴 كابتن التوصيل (مباشر)</h2>
         <span style="background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 10px; font-size: 12px;">متصل 🟢</span>
     </div>
 
@@ -52,9 +52,11 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إحداثيات الصيدلية الأساسية الثابتة في الحرجة قبلي
+    // إحداثيات مقر الصيدلية الثابتة (الحرجة قبلي)
     const pharmacyLoc = [26.201767, 31.938367]; 
     let map = null, routingControl = null;
+    let driverMarker = null;
+    let watchId = null;
 
     db.ref('orders').on('value', snapshot => {
         const data = snapshot.val();
@@ -68,6 +70,7 @@
         const box = document.getElementById('driverBox');
         if (!activeKey) {
             box.innerHTML = '<p style="text-align:center; color:#94a3b8;">لا توجد مهام حالية.. في انتظار أوردر جديد 🚴</p>';
+            if (watchId) navigator.geolocation.clearWatch(watchId);
             return;
         }
 
@@ -80,7 +83,7 @@
             <div id="map"></div>
 
             <div class="stats">
-                <div><span>المسافة:</span> <strong id="distText" style="color:#38bdf8;">--</strong></div>
+                <div><span>المتبقي:</span> <strong id="distText" style="color:#38bdf8;">--</strong></div>
                 <div><span>الوقت:</span> <strong id="timeText" style="color:#34d399;">--</strong></div>
             </div>
 
@@ -88,48 +91,69 @@
             <button class="btn-done" onclick="finishDelivery('${activeKey}')">✅ تم تسليم الأوردر</button>
         `;
 
-        renderRoute(activeOrder.lat, activeOrder.lng);
+        initLiveTracking(activeOrder.lat, activeOrder.lng);
     });
 
-    function renderRoute(destLat, destLng) {
+    function initLiveTracking(destLat, destLng) {
         if (map) map.remove();
         
-        map = L.map('map').setView(pharmacyLoc, 13);
+        map = L.map('map').setView(pharmacyLoc, 14);
 
         L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
-        // علامة مقر الصيدلية الرئيسي الثابت
-        L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 مقر الصيدلية (الحرجة قبلي)').openPopup();
-        L.marker([destLat, destLng]).addTo(map).bindPopup('📍 مكان العميل بالقرية');
+        // علامة بيت العميل الثابتة
+        const destPoint = L.latLng(destLat, destLng);
+        L.marker(destPoint).addTo(map).bindPopup('📍 بيت العميل');
 
-        routingControl = L.Routing.control({
-            waypoints: [
-                L.latLng(pharmacyLoc[0], pharmacyLoc[1]),
-                L.latLng(destLat, destLng)
-            ],
-            lineOptions: {
-                styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }]
-            },
-            router: L.Routing.osrmv1({
-                serviceUrl: 'https://router.project-osrm.org/route/v1'
-            }),
-            addWaypoints: false,
-            draggableWaypoints: false,
-            fitSelectedRoutes: false,
-            show: false
-        }).addTo(map);
+        // بدء تتبع حركة المندوب لحظياً عبر GPS الموبايل
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const currentLat = pos.coords.latitude;
+                    const currentLng = pos.coords.longitude;
+                    const currentPos = L.latLng(currentLat, currentLng);
 
-        routingControl.on('routesfound', e => {
-            const summary = e.routes[0].summary;
-            document.getElementById('distText').innerText = (summary.totalDistance / 1000).toFixed(1) + ' كم';
-            document.getElementById('timeText').innerText = Math.round(summary.totalTime / 60) + ' دقيقة';
-        });
+                    // تحديث مكان دراجة المندوب على الخريطة
+                    if (!driverMarker) {
+                        driverMarker = L.marker(currentPos, {
+                            icon: L.divIcon({ html: '🛵', className: 'driver-icon', iconSize: [30, 30] })
+                        }).addTo(map).bindPopup('أنت هنا (المندوب)').openPopup();
+                    } else {
+                        driverMarker.setLatLng(currentPos);
+                    }
+
+                    // تحديث رسم الخط والمسافة كلما تحرك المندوب (الخط بيقصر تلقائياً)
+                    if (!routingControl) {
+                        routingControl = L.Routing.control({
+                            waypoints: [currentPos, destPoint],
+                            lineOptions: { styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }] },
+                            router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                            addWaypoints: false,
+                            draggableWaypoints: false,
+                            fitSelectedRoutes: false,
+                            show: false
+                        }).addTo(map);
+
+                        routingControl.on('routesfound', e => {
+                            const summary = e.routes[0].summary;
+                            document.getElementById('distText').innerText = (summary.totalDistance / 1000).toFixed(1) + ' كم';
+                            document.getElementById('timeText').innerText = Math.round(summary.totalTime / 60) + ' دقيقة';
+                        });
+                    } else {
+                        routingControl.setWaypoints([currentPos, destPoint]);
+                    }
+                },
+                (err) => { console.log("خطأ في تحديد الـ GPS للمندوب"); },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+        }
     }
 
     function finishDelivery(orderId) {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
         db.ref('orders/' + orderId).update({
             status: 'تم التسليم بنجاح'
         }).then(() => alert('عاش يا بطل! تم إنهاء التوصيل.'));
