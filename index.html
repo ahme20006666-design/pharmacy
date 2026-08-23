@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>صيدلية البلينا - طلب دواء</title>
-    <!-- مكتبة الخرائط -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -43,13 +42,13 @@
         </div>
         <div class="form-group">
             <label>اسم القرية أو الشارع</label>
-            <input type="text" id="custAddress" placeholder="مثال: قرية برخيل / بجوار المسجد">
+            <input type="text" id="custAddress" placeholder="مثال: الحرجة / بجوار المسجد">
         </div>
 
-        <button class="btn-gps" onclick="getGPS()">📍 تحديد موقعي التلقائي (GPS)</button>
+        <button class="btn-gps" onclick="getGPS()">📍 تحديد موقعي الدقيق (GPS)</button>
         <div id="gpsStatus" class="gps-status"></div>
 
-        <p style="font-size: 11px; color: #64748b; margin-bottom: 5px; text-align: center;">أو حدد مكان بيتك بالقرية مباشرة على الخريطة:</p>
+        <p style="font-size: 11px; color: #64748b; margin-bottom: 5px; text-align: center;">أو حدد مكان بيتك على الخريطة:</p>
         <div id="clientMap"></div>
 
         <button class="btn-submit" onclick="sendOrder()">تأكيد وإرسال الطلب 🚀</button>
@@ -64,7 +63,6 @@
     </div>
 </div>
 
-<!-- Firebase & Leaflet SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -82,20 +80,19 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let clientLat = 26.2345;
-    let clientLng = 31.9985;
+    // إحداثيات الصيدلية الجديدة (الحرجة قبلي) كبداية افتراضية
+    let clientLat = 26.201767;
+    let clientLng = 31.938367;
 
-    // تهيئة الخريطة
-    const clientMap = L.map('clientMap').setView([clientLat, clientLng], 12);
+    const clientMap = L.map('clientMap').setView([clientLat, clientLng], 14);
 
-    // سحب تفاصيل خرائط جوجل المفصلة باللغة العربية والنجوع
     L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     }).addTo(clientMap);
 
     let marker = L.marker([clientLat, clientLng], {draggable: true}).addTo(clientMap);
-    marker.bindPopup("مكان بيتك (اسحبه أو اضغط للتعديل)").openPopup();
+    marker.bindPopup("منزلي 🏠 (اسحبه أو اضغط للتعديل)").openPopup();
 
     clientMap.on('click', function(e) {
         clientLat = e.latlng.lat;
