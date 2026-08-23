@@ -52,7 +52,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إحداثيات الصيدلية الحقيقية (الحرجة قبلي)
+    // إحداثيات الصيدلية الأساسية الثابتة في الحرجة قبلي
     const pharmacyLoc = [26.201767, 31.938367]; 
     let map = null, routingControl = null;
 
@@ -101,7 +101,7 @@
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
-        // وضع علامة واضحة لمقر الصيدلية الرئيسي
+        // علامة مقر الصيدلية الرئيسي الثابت
         L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 مقر الصيدلية (الحرجة قبلي)').openPopup();
         L.marker([destLat, destLng]).addTo(map).bindPopup('📍 مكان العميل بالقرية');
 
