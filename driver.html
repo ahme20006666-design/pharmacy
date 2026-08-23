@@ -2,35 +2,52 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق المندوب - صيدلية البلينا</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>كابتن التوصيل - صيدلية د. هشام إسماعيل</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #0f172a; color: #f8fafc; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 450px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .card { background: #1e293b; border-radius: 20px; padding: 18px; border: 1px solid #334155; }
-        #map { width: 100%; height: 350px; border-radius: 14px; margin: 12px 0; border: 1px solid #475569; z-index: 1; }
+        html, body { height: 100%; overflow: hidden; background: #0f172a; }
+        body { display: flex; justify-content: center; align-items: center; padding: 8px; }
+        .app-card { background: #1e293b; width: 100%; max-width: 440px; height: 100%; max-height: 98vh; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 1.5px solid #334155; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 10px 14px; border-radius: 14px; }
+        .header h2 { font-size: 15px; font-weight: 800; }
+        .status-badge { background: #0284c7; color: #ffffff; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        .meta-box { background: #0f172a; padding: 8px 12px; border-radius: 10px; border: 1px solid #334155; font-size: 12px; color: #cbd5e1; }
+        .meta-box strong { color: #f8fafc; }
+        #map { width: 100%; height: 180px; border-radius: 12px; border: 1.5px solid #475569; z-index: 1; }
         .leaflet-routing-container { display: none !important; }
-        .stats { display: flex; justify-content: space-around; background: #0f172a; padding: 10px; border-radius: 12px; margin-bottom: 12px; }
-        .btn-done { width: 100%; background: #10b981; color: #064e3b; border: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; }
-        .btn-call { display: block; text-align: center; background: #334155; color: white; text-decoration: none; padding: 10px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
+        .stats-bar { display: flex; justify-content: space-around; background: #0f172a; padding: 8px; border-radius: 10px; border: 1px solid #334155; }
+        .stat-item { text-align: center; }
+        .stat-item span { font-size: 10px; color: #94a3b8; display: block; }
+        .stat-item strong { font-size: 13px; color: #38bdf8; }
+        .btn-call { display: block; text-align: center; background: #334155; color: white; text-decoration: none; padding: 9px; border-radius: 10px; font-weight: bold; font-size: 12px; }
+        .btn-done { width: 100%; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 11px; border-radius: 10px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        .pulse-footer { animation: pulse-glow 2.5s infinite ease-in-out; text-align: center; padding-top: 4px; border-top: 1px dashed #334155; }
+        .pulse-footer .dr { font-size: 11.5px; font-weight: 800; color: #60a5fa; }
+        .pulse-footer .dev { font-size: 10px; font-weight: 700; color: #93c5fd; }
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 5px rgba(96,165,250,0.4); }
+            50% { transform: scale(1.03); text-shadow: 0 0 12px rgba(96,165,250,0.8); }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app-card" id="driverContainer">
     <div class="header">
-        <h2 style="color: #34d399;">🚴 كابتن التوصيل (مباشر)</h2>
-        <span style="background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 10px; font-size: 12px;">متصل 🟢</span>
+        <h2>🚴 كابتن التوصيل</h2>
+        <span class="status-badge">مباشر 🟢</span>
     </div>
 
-    <div class="card" id="driverBox">
-        <p style="text-align: center; color: #94a3b8;">في انتظار إسناد طلبات من الإدارة...</p>
+    <div id="activeContent" style="display:flex; flex-direction:column; gap:6px;">
+        <p style="text-align:center; color:#94a3b8; padding:30px 0; font-size:13px;">في انتظار إسناد أوردرات من الإدارة...</p>
+    </div>
+
+    <div class="pulse-footer">
+        <div class="dr">صيدلية DR: Hisham Ismail</div>
+        <div class="dev">By / ENG: Ahmed Al sayyad</div>
     </div>
 </div>
 
@@ -52,111 +69,86 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // إحداثيات مقر الصيدلية الثابتة (الحرجة قبلي)
-    const pharmacyLoc = [26.201767, 31.938367]; 
-    let map = null, routingControl = null;
-    let driverMarker = null;
-    let watchId = null;
+    const pharmacyLoc = [26.201767, 31.938367]; // الحرجة قبلي
+    let map = null, routingControl = null, driverMarker = null, watchId = null;
 
     db.ref('orders').on('value', snapshot => {
         const data = snapshot.val();
+        const content = document.getElementById('activeContent');
         if (!data) return;
 
         let activeKey = null;
-        Object.keys(data).forEach(key => {
-            if (data[key].status === 'مع المندوب') activeKey = key;
-        });
+        Object.keys(data).forEach(k => { if (data[k].status === 'مع المندوب') activeKey = k; });
 
-        const box = document.getElementById('driverBox');
         if (!activeKey) {
-            box.innerHTML = '<p style="text-align:center; color:#94a3b8;">لا توجد مهام حالية.. في انتظار أوردر جديد 🚴</p>';
+            content.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:35px 0; font-size:13px;">لا توجد مهام حالية.. في انتظار أوردر جديد 🚴</p>';
             if (watchId) navigator.geolocation.clearWatch(watchId);
             return;
         }
 
-        const activeOrder = data[activeKey];
-        box.innerHTML = `
-            <h3 style="color: #f8fafc; margin-bottom: 5px;">📦 طلب توصيل جديد</h3>
-            <p style="font-size: 13px; color: #cbd5e1;">👤 <strong>العميل:</strong> ${activeOrder.name}</p>
-            <p style="font-size: 13px; color: #cbd5e1;">📍 <strong>العنوان:</strong> ${activeOrder.address}</p>
-            
-            <div id="map"></div>
-
-            <div class="stats">
-                <div><span>المتبقي:</span> <strong id="distText" style="color:#38bdf8;">--</strong></div>
-                <div><span>الوقت:</span> <strong id="timeText" style="color:#34d399;">--</strong></div>
+        const o = data[activeKey];
+        content.innerHTML = `
+            <div class="meta-box">
+                <p>👤 <strong>العميل:</strong> ${o.name} | 📍 ${o.address}</p>
             </div>
-
-            <a href="tel:${activeOrder.phone}" class="btn-call">📞 اتصال بالعميل</a>
+            <div id="map"></div>
+            <div class="stats-bar">
+                <div class="stat-item"><span>المتبقي</span><strong id="distText">--</strong></div>
+                <div class="stat-item"><span>الوقت</span><strong id="timeText" style="color:#34d399;">--</strong></div>
+            </div>
+            <a href="tel:${o.phone}" class="btn-call">📞 اتصال بالعميل (${o.phone})</a>
             <button class="btn-done" onclick="finishDelivery('${activeKey}')">✅ تم تسليم الأوردر</button>
         `;
-
-        initLiveTracking(activeOrder.lat, activeOrder.lng);
+        initLiveRoute(o.lat, o.lng);
     });
 
-    function initLiveTracking(destLat, destLng) {
+    function initLiveRoute(destLat, destLng) {
         if (map) map.remove();
-        
-        map = L.map('map').setView(pharmacyLoc, 14);
+        map = L.map('map', { zoomControl: false }).setView(pharmacyLoc, 13);
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0','mt1','mt2','mt3'] }).addTo(map);
 
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        }).addTo(map);
-
-        // علامة بيت العميل الثابتة
         const destPoint = L.latLng(destLat, destLng);
         L.marker(destPoint).addTo(map).bindPopup('📍 بيت العميل');
+        L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 صيدلية د. هشام إسماعيل');
 
-        // بدء تتبع حركة المندوب لحظياً عبر GPS الموبايل
         if (navigator.geolocation) {
             watchId = navigator.geolocation.watchPosition(
-                (pos) => {
-                    const currentLat = pos.coords.latitude;
-                    const currentLng = pos.coords.longitude;
-                    const currentPos = L.latLng(currentLat, currentLng);
-
-                    // تحديث مكان دراجة المندوب على الخريطة
+                pos => {
+                    const currentPos = L.latLng(pos.coords.latitude, pos.coords.longitude);
                     if (!driverMarker) {
                         driverMarker = L.marker(currentPos, {
-                            icon: L.divIcon({ html: '🛵', className: 'driver-icon', iconSize: [30, 30] })
-                        }).addTo(map).bindPopup('أنت هنا (المندوب)').openPopup();
+                            icon: L.divIcon({ html: '🛵', className: 'driver-ico', iconSize: [25, 25] })
+                        }).addTo(map);
                     } else {
                         driverMarker.setLatLng(currentPos);
                     }
 
-                    // تحديث رسم الخط والمسافة كلما تحرك المندوب (الخط بيقصر تلقائياً)
                     if (!routingControl) {
                         routingControl = L.Routing.control({
                             waypoints: [currentPos, destPoint],
-                            lineOptions: { styles: [{ color: '#2563eb', opacity: 0.9, weight: 6 }] },
+                            lineOptions: { styles: [{ color: '#38bdf8', opacity: 0.9, weight: 6 }] },
                             router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-                            addWaypoints: false,
-                            draggableWaypoints: false,
-                            fitSelectedRoutes: false,
-                            show: false
+                            addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false
                         }).addTo(map);
-
                         routingControl.on('routesfound', e => {
-                            const summary = e.routes[0].summary;
-                            document.getElementById('distText').innerText = (summary.totalDistance / 1000).toFixed(1) + ' كم';
-                            document.getElementById('timeText').innerText = Math.round(summary.totalTime / 60) + ' دقيقة';
+                            const s = e.routes[0].summary;
+                            document.getElementById('distText').innerText = (s.totalDistance / 1000).toFixed(1) + ' كم';
+                            document.getElementById('timeText').innerText = Math.round(s.totalTime / 60) + ' دقيقة';
                         });
                     } else {
                         routingControl.setWaypoints([currentPos, destPoint]);
                     }
                 },
-                (err) => { console.log("خطأ في تحديد الـ GPS للمندوب"); },
+                null,
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         }
     }
 
-    function finishDelivery(orderId) {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        db.ref('orders/' + orderId).update({
-            status: 'تم التسليم بنجاح'
-        }).then(() => alert('عاش يا بطل! تم إنهاء التوصيل.'));
+    function finishDelivery(key) {
+        if (confirm('تأكيد إتمام التوصيل بنجاح؟')) {
+            db.ref('orders/' + key).update({ status: 'تم التسليم' });
+        }
     }
 </script>
 </body>
