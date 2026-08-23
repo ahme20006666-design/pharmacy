@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>كابتن التوصيل - صيدلية د. هشام إسماعيل</title>
+    
+    <!-- إعدادات وأيقونة تطبيق المندوب للشاشة الرئيسية -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="كابتن التوصيل">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%230f172a'/><circle cx='256' cy='256' r='180' fill='%23059669' opacity='0.4'/><text x='50%25' y='54%25' text-anchor='middle' font-size='200'>🛵</text><text x='50%25' y='84%25' text-anchor='middle' font-size='60' font-weight='900' fill='%2334d399' font-family='sans-serif'>الكابتن</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%230f172a'/><circle cx='256' cy='256' r='180' fill='%23059669' opacity='0.4'/><text x='50%25' y='54%25' text-anchor='middle' font-size='200'>🛵</text><text x='50%25' y='84%25' text-anchor='middle' font-size='60' font-weight='900' fill='%2334d399' font-family='sans-serif'>الكابتن</text></svg>">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <style>
@@ -69,7 +79,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const pharmacyLoc = [26.201767, 31.938367]; // الحرجة قبلي
+    const pharmacyLoc = [26.201767, 31.938367];
     let map = null, routingControl = null, driverMarker = null, watchId = null;
 
     db.ref('orders').on('value', snapshot => {
