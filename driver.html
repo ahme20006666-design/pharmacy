@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تطبيق المندوب - صيدلية البلينا</title>
     
-    <!-- مكتبة الخرائط والمسارات المجانية -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     
@@ -26,7 +25,7 @@
 
 <div class="container">
     <div class="header">
-        <h2 style="color: #34d399;">🚴 كابتن التوصيل (البلينا)</h2>
+        <h2 style="color: #34d399;">🚴 كابتن التوصيل</h2>
         <span style="background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 10px; font-size: 12px;">متصل 🟢</span>
     </div>
 
@@ -35,11 +34,8 @@
     </div>
 </div>
 
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-<!-- Leaflet & Routing SDK -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
@@ -56,7 +52,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const pharmacyLoc = [26.2345, 31.9985]; // إحداثيات الصيدلية في وسط البلينا
+    // إحداثيات الصيدلية الحقيقية (الحرجة قبلي)
+    const pharmacyLoc = [26.201767, 31.938367]; 
     let map = null, routingControl = null;
 
     db.ref('orders').on('value', snapshot => {
@@ -97,16 +94,15 @@
     function renderRoute(destLat, destLng) {
         if (map) map.remove();
         
-        // ضبط الرؤية المبدئية على صيدلية البلينا
-        map = L.map('map').setView(pharmacyLoc, 12);
+        map = L.map('map').setView(pharmacyLoc, 13);
 
-        // خريطة جوجل الشاملة للقرى والنجوع مع أقصى زوم متاح
         L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 20,
             subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
         }).addTo(map);
 
-        L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 صيدلية البلينا').openPopup();
+        // وضع علامة واضحة لمقر الصيدلية الرئيسي
+        L.marker(pharmacyLoc).addTo(map).bindPopup('🏪 مقر الصيدلية (الحرجة قبلي)').openPopup();
         L.marker([destLat, destLng]).addTo(map).bindPopup('📍 مكان العميل بالقرية');
 
         routingControl = L.Routing.control({
@@ -122,7 +118,7 @@
             }),
             addWaypoints: false,
             draggableWaypoints: false,
-            fitSelectedRoutes: false, // زوم وتحريك حر بدون قفل
+            fitSelectedRoutes: false,
             show: false
         }).addTo(map);
 
