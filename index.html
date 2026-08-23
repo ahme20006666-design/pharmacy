@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>صيدلية د. هشام إسماعيل - طلب دواء</title>
     
-    <!-- خطوط عربية عريضة جداً واحترافية -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=Tajawal:wght@800;900&display=swap" rel="stylesheet">
@@ -17,12 +16,10 @@
         body { display: flex; justify-content: center; align-items: center; padding: 5px; }
         .app-card { background: #ffffff; width: 100%; max-width: 420px; height: 100%; max-height: 98vh; border-radius: 20px; box-shadow: 0 8px 25px rgba(30,64,175,0.15); border: 1.5px solid #dbeafe; display: flex; flex-direction: column; justify-content: space-between; padding: 10px 12px; }
         
-        /* الهيدر العلوي */
         .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 7px 12px; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
         .header h2 { font-size: 14.5px; font-weight: 800; }
         .header p { font-size: 10px; opacity: 0.9; margin-top: 1px; }
         
-        /* كلمة الدكتور عريضة وضخمة جداً بنبض قوي */
         .doctor-title-box { text-align: center; margin: 2px 0; }
         .doctor-title {
             font-family: 'Cairo', 'Tajawal', sans-serif;
@@ -38,21 +35,15 @@
         }
 
         @keyframes pulse-doctor-giant {
-            0%, 100% {
-                transform: scale(1);
-                filter: drop-shadow(0 3px 5px rgba(30, 64, 175, 0.4));
-            }
-            50% {
-                transform: scale(1.12);
-                filter: drop-shadow(0 6px 16px rgba(37, 99, 235, 0.85));
-            }
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 3px 5px rgba(30, 64, 175, 0.4)); }
+            50% { transform: scale(1.12); filter: drop-shadow(0 6px 16px rgba(37, 99, 235, 0.85)); }
         }
 
         .form-area { display: flex; flex-direction: column; gap: 4px; }
         .input-box { width: 100%; padding: 6px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 11.5px; outline: none; background: #f8fafc; }
         .input-box:focus { border-color: #2563eb; background: #ffffff; }
         .btn-gps { width: 100%; background: #eff6ff; color: #1e40af; border: 1.5px dashed #3b82f6; padding: 6px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px; }
-        .gps-status { font-size: 9.5px; text-align: center; font-weight: bold; color: #1d4ed8; display: none; }
+        .gps-status { font-size: 9.5px; text-align: center; font-weight: bold; display: none; }
         #clientMap { width: 100%; height: 105px; border-radius: 10px; border: 1.5px solid #bfdbfe; }
         
         .actions { display: flex; gap: 6px; margin-top: 3px; }
@@ -77,7 +68,6 @@
         <p>خدمة التوصيل السريع لجميع القرى والنجوع</p>
     </div>
 
-    <!-- كلمة الدكتور ضخمة وعريضة ونابضة -->
     <div class="doctor-title-box">
         <h1 class="doctor-title">الدكتور</h1>
     </div>
@@ -122,6 +112,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // نقطة البداية الافتراضية (الحرجة قبلي / بني حميل / البلينا)
     let clientLat = 26.201767;
     let clientLng = 31.938367;
 
@@ -134,22 +125,47 @@
     let marker = L.marker([clientLat, clientLng], {draggable: true}).addTo(clientMap);
     marker.bindPopup("منزلي 🏠 (اسحبه لتحديد الدقة)").openPopup();
 
-    clientMap.on('click', e => { clientLat = e.latlng.lat; clientLng = e.latlng.lng; marker.setLatLng([clientLat, clientLng]); });
-    marker.on('dragend', () => { const p = marker.getLatLng(); clientLat = p.lat; clientLng = p.lng; });
+    clientMap.on('click', e => { 
+        clientLat = e.latlng.lat; 
+        clientLng = e.latlng.lng; 
+        marker.setLatLng([clientLat, clientLng]); 
+    });
+    marker.on('dragend', () => { 
+        const p = marker.getLatLng(); 
+        clientLat = p.lat; 
+        clientLng = p.lng; 
+    });
 
     function getGPS() {
         const s = document.getElementById('gpsStatus');
-        s.style.display = 'block'; s.innerText = "جاري التقاط إحداثيات GPS...";
+        s.style.display = 'block'; 
+        s.innerText = "جاري التقاط إحداثيات GPS...";
+        s.style.color = "#1d4ed8";
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
-                    clientLat = pos.coords.latitude; clientLng = pos.coords.longitude;
-                    clientMap.setView([clientLat, clientLng], 16);
-                    marker.setLatLng([clientLat, clientLng]);
-                    s.innerText = `✅ تم تحديد الموقع بدقة (${Math.round(pos.coords.accuracy)} م)`;
+                    const acc = Math.round(pos.coords.accuracy);
+                    
+                    // إذا كان الفحص من كمبيوتر بنسبة خطأ عالية، نتجاهل موقع سوهاج ونبقى في نطاق البلينا
+                    if (acc > 3000) {
+                        s.innerText = `⚠️ تم الالتقاط عبر النت (${Math.round(acc/1000)} كم خطأ) - افتح من الموبايل أو حرّك الدبوس`;
+                        s.style.color = "#d97706";
+                    } else {
+                        // GPS حقيقي ودقيق من الموبايل
+                        clientLat = pos.coords.latitude; 
+                        clientLng = pos.coords.longitude;
+                        clientMap.setView([clientLat, clientLng], 16);
+                        marker.setLatLng([clientLat, clientLng]);
+                        s.innerText = `✅ تم تحديد موقعك الحقيقي بدقة (${acc} متر)`;
+                        s.style.color = "#16a34a";
+                    }
                 },
-                () => { s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; },
-                { enableHighAccuracy: true }
+                () => { 
+                    s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; 
+                    s.style.color = "#dc2626";
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
     }
