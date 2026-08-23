@@ -3,33 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة - صيدلية البلينا</title>
+    <title>لوحة الإدارة - صيدلية د. هشام إسماعيل</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f8fafc; padding: 20px; color: #1e293b; }
-        .header { max-width: 800px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
-        .badge { background: #fee2e2; color: #ef4444; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .order-card { background: white; border-radius: 16px; padding: 18px; margin-bottom: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
-        .order-top { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; font-weight: bold; }
-        .order-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #475569; margin-bottom: 12px; }
-        .actions { display: flex; gap: 10px; }
-        .btn-assign { flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn-call { background: #e2e8f0; color: #1e293b; text-decoration: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 13px; }
+        body { background: #f1f5f9; color: #1e293b; padding: 15px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 18px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(37,99,235,0.2); margin-bottom: 20px; }
+        .header h1 { font-size: 18px; font-weight: 800; }
+        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        .stat-card span { font-size: 12px; color: #64748b; font-weight: 600; display: block; }
+        .stat-card strong { font-size: 20px; color: #1e40af; margin-top: 4px; display: block; }
+        .order-card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 10px; }
+        .order-card.new-order { border-right: 5px solid #2563eb; background: #f8faff; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; }
+        .badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        .badge-new { background: #dbeafe; color: #1e40af; }
+        .badge-driver { background: #fef3c7; color: #b45309; }
+        .badge-done { background: #dcfce7; color: #15803d; }
+        .order-details { font-size: 13px; color: #475569; line-height: 1.6; }
+        .order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 8px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+        .btn-assign { background: #2563eb; color: white; }
+        .btn-done { background: #10b981; color: white; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-call { background: #f1f5f9; color: #334155; }
+        .pulse-footer { animation: pulse-glow 2.5s infinite ease-in-out; text-align: center; padding: 20px 0; margin-top: 20px; border-top: 1px dashed #cbd5e1; }
+        .pulse-footer .dr { font-size: 14px; font-weight: 800; color: #1e40af; }
+        .pulse-footer .dev { font-size: 12px; font-weight: 700; color: #2563eb; }
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 6px rgba(37,99,235,0.3); }
+            50% { transform: scale(1.02); text-shadow: 0 0 12px rgba(37,99,235,0.6); }
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>🏪 لوحة متابعة الطلبات (البلينا)</h2>
-    <span class="badge">● بث مباشر متصل</span>
+<div class="container">
+    <div class="header">
+        <div>
+            <h1>💊 لوحة إدارة الطلبات</h1>
+            <p style="font-size: 12px; opacity: 0.9;">صيدلية د. هشام إسماعيل (الحرجة قبلي)</p>
+        </div>
+        <button onclick="enableSound()" id="soundBtn" class="btn" style="background:white; color:#1e40af;">🔔 تفعيل صوت التنبيه</button>
+    </div>
+
+    <div class="stats-cards">
+        <div class="stat-card"><span>طلبات جديدة</span><strong id="countNew">0</strong></div>
+        <div class="stat-card"><span>مع المندوب</span><strong id="countDriver">0</strong></div>
+        <div class="stat-card"><span>تم التسليم</span><strong id="countDone">0</strong></div>
+    </div>
+
+    <div id="ordersList">
+        <p style="text-align:center; color:#94a3b8; padding:30px;">جاري تحميل الطلبات...</p>
+    </div>
+
+    <div class="pulse-footer">
+        <div class="dr">صيدلية DR: Hisham Ismail</div>
+        <div class="dev">By / ENG: Ahmed Al sayyad</div>
+    </div>
 </div>
 
-<div class="container" id="ordersList">
-    <p style="text-align: center; color: #94a3b8; margin-top: 40px;">جاري تحميل الطلبات...</p>
-</div>
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -46,44 +80,89 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    let isSoundEnabled = false;
+    let audioCtx = null;
+    let initialLoad = true;
+
+    function enableSound() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        isSoundEnabled = true;
+        document.getElementById('soundBtn').innerText = '✅ التنبيه الصوتي مفعل';
+        document.getElementById('soundBtn').style.background = '#dcfce7';
+        document.getElementById('soundBtn').style.color = '#15803d';
+    }
+
+    function playBeep() {
+        if (!isSoundEnabled || !audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+    }
+
     db.ref('orders').on('value', snapshot => {
         const data = snapshot.val();
-        const container = document.getElementById('ordersList');
+        const list = document.getElementById('ordersList');
+
         if (!data) {
-            container.innerHTML = '<p style="text-align:center; color:#94a3b8;">لا توجد طلبات حالياً</p>';
+            list.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد أي طلبات حالياً</p>';
+            updateCounts(0,0,0);
             return;
         }
 
+        let cNew = 0, cDriver = 0, cDone = 0;
         let html = '';
-        Object.keys(data).reverse().forEach(key => {
-            const item = data[key];
-            const isAssigned = item.status === 'مع المندوب';
+
+        const keys = Object.keys(data).reverse();
+        keys.forEach(key => {
+            const o = data[key];
+            let badgeClass = 'badge-new';
+            if (o.status === 'جديد') cNew++;
+            else if (o.status === 'مع المندوب') { cDriver++; badgeClass = 'badge-driver'; }
+            else if (o.status === 'تم التسليم') { cDone++; badgeClass = 'badge-done'; }
+
             html += `
-            <div class="order-card" style="border-right: 5px solid ${isAssigned ? '#3b82f6' : '#059669'}">
-                <div class="order-top">
-                    <span>طلب: ${item.name}</span>
-                    <span style="color: ${isAssigned ? '#2563eb' : '#059669'};">${item.status}</span>
+                <div class="order-card ${o.status === 'جديد' ? 'new-order' : ''}">
+                    <div class="order-header">
+                        <strong>👤 ${o.name}</strong>
+                        <span class="badge ${badgeClass}">${o.status}</span>
+                    </div>
+                    <div class="order-details">
+                        <p>📍 <strong>العنوان:</strong> ${o.address}</p>
+                        <p>🕒 <strong>التوقيت:</strong> ${o.time || '--'}</p>
+                    </div>
+                    <div class="order-actions">
+                        <a href="tel:${o.phone}" class="btn btn-call">📞 ${o.phone}</a>
+                        ${o.status === 'جديد' ? `<button class="btn btn-assign" onclick="updateStatus('${key}', 'مع المندوب')">🚴 إسناد للمندوب</button>` : ''}
+                        ${o.status === 'مع المندوب' ? `<button class="btn btn-done" onclick="updateStatus('${key}', 'تم التسليم')">✅ تم التسليم</button>` : ''}
+                        <button class="btn btn-delete" onclick="deleteOrder('${key}')">🗑️ حذف</button>
+                    </div>
                 </div>
-                <div class="order-info">
-                    <div>📱 <strong>الهاتف:</strong> ${item.phone}</div>
-                    <div>📍 <strong>العنوان:</strong> ${item.address}</div>
-                    <div>⏱️ <strong>الوقت:</strong> ${item.time}</div>
-                    <div>🌐 <strong>الإحداثيات:</strong> ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}</div>
-                </div>
-                <div class="actions">
-                    <button class="btn-assign" onclick="assignDriver('${key}')">🚴 ${isAssigned ? 'إعادة التوجيه للمندوب' : 'إسناد للمندوب الآن'}</button>
-                    <a href="tel:${item.phone}" class="btn-call">📞 اتصال</a>
-                </div>
-            </div>`;
+            `;
         });
-        container.innerHTML = html;
+
+        if (!initialLoad && cNew > 0) playBeep();
+        initialLoad = false;
+
+        list.innerHTML = html;
+        updateCounts(cNew, cDriver, cDone);
     });
 
-    function assignDriver(orderId) {
-        db.ref('orders/' + orderId).update({
-            status: 'مع المندوب'
-        }).then(() => alert('تم إسناد الطلب للمندوب! الخريطة ستظهر عنده فوراً.'));
+    function updateCounts(n, dr, dn) {
+        document.getElementById('countNew').innerText = n;
+        document.getElementById('countDriver').innerText = dr;
+        document.getElementById('countDone').innerText = dn;
     }
+
+    function updateStatus(id, st) { db.ref('orders/' + id).update({ status: st }); }
+    function deleteOrder(id) { if (confirm('هل تريد مسح هذا الأوردر نهائياً؟')) db.ref('orders/' + id).remove(); }
 </script>
 </body>
 </html>
