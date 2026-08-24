@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>لوحة الإدارة - صيدلية د. هشام إسماعيل</title>
     
     <!-- إعدادات وأيقونة لوحة الإدارة للشاشة الرئيسية -->
@@ -14,37 +14,232 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%231e3a8a'/><circle cx='256' cy='256' r='180' fill='%232563eb' opacity='0.5'/><text x='50%25' y='54%25' text-anchor='middle' font-size='190'>📊</text><text x='50%25' y='84%25' text-anchor='middle' font-size='60' font-weight='900' fill='%2360a5fa' font-family='sans-serif'>الإدارة</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%231e3a8a'/><circle cx='256' cy='256' r='180' fill='%232563eb' opacity='0.5'/><text x='50%25' y='54%25' text-anchor='middle' font-size='190'>📊</text><text x='50%25' y='84%25' text-anchor='middle' font-size='60' font-weight='900' fill='%2360a5fa' font-family='sans-serif'>الإدارة</text></svg>">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- حماية وتعريف الدوال مسبقاً لمنع أي أخطاء في TrebEdit -->
+    <script>
+        window.currentActiveSession = null;
+        window.isSoundEnabled = false;
+        window.audioCtx = null;
+        window.initialLoad = true;
+
+        window.enableSound = function() {
+            try {
+                window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                window.isSoundEnabled = true;
+                var btn = document.getElementById('soundBtn');
+                if (btn) {
+                    btn.innerText = '✅ التنبيه الصوتي مفعل';
+                    btn.style.background = '#dcfce7';
+                    btn.style.color = '#15803d';
+                }
+            } catch(e) {
+                alert('يرجى الضغط في أي مكان لتفعيل الصوت');
+            }
+        };
+
+        window.playBeep = function() {
+            if (!window.isSoundEnabled || !window.audioCtx) return;
+            try {
+                var osc = window.audioCtx.createOscillator();
+                var gain = window.audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, window.audioCtx.currentTime);
+                osc.frequency.setValueAtTime(880, window.audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, window.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, window.audioCtx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(window.audioCtx.destination);
+                osc.start();
+                osc.stop(window.audioCtx.currentTime + 0.4);
+            } catch(e){}
+        };
+
+        window.updateStatus = function(id, st) {
+            if (window.db) {
+                window.db.ref('orders/' + id).update({ status: st });
+            }
+        };
+
+        window.deleteOrder = function(id) {
+            if (confirm('هل تريد مسح هذا الأوردر نهائياً؟')) {
+                if (window.db) {
+                    window.db.ref('orders/' + id).remove();
+                }
+            }
+        };
+
+        window.openAdminChat = function(sessionId, name, phone) {
+            window.currentActiveSession = sessionId;
+            var nameEl = document.getElementById('chatClientName');
+            var phoneEl = document.getElementById('chatClientPhone');
+            var modal = document.getElementById('adminChatModal');
+
+            if (nameEl) nameEl.innerText = '💬 محادثة العميل: ' + name;
+            if (phoneEl) phoneEl.innerText = 'هاتف: ' + phone;
+            if (modal) modal.style.display = 'flex';
+
+            if (!window.db) return;
+            window.db.ref('chats/' + sessionId).on('value', function(snapshot) {
+                var msgs = snapshot.val();
+                var container = document.getElementById('adminChatList');
+                if (!container) return;
+                container.innerHTML = '';
+                if (!msgs) {
+                    container.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد رسائل بعد.. في انتظار إرسال العميل للروشتة أو التسجيل الصوتي</p>';
+                    return;
+                }
+                Object.values(msgs).forEach(function(m) {
+                    var div = document.createElement('div');
+                    div.className = 'admin-msg ' + (m.sender === 'client' ? 'admin-msg-client' : 'admin-msg-admin');
+                    if (m.type === 'text') {
+                        div.innerText = m.content;
+                    } else if (m.type === 'image') {
+                        div.innerHTML = '<img src="' + m.content + '" onclick="window.open(this.src)" title="اضغط لتكبير الروشتة" />';
+                    } else if (m.type === 'audio') {
+                        div.innerHTML = '<audio controls src="' + m.content + '"></audio>';
+                    }
+                    container.appendChild(div);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        };
+
+        window.closeAdminChat = function() {
+            var modal = document.getElementById('adminChatModal');
+            if (modal) modal.style.display = 'none';
+            if (window.currentActiveSession && window.db) {
+                window.db.ref('chats/' + window.currentActiveSession).off();
+            }
+        };
+
+        window.sendAdminReply = function() {
+            var inp = document.getElementById('adminReplyText');
+            if (!inp) return;
+            var text = inp.value.trim();
+            if (!text || !window.currentActiveSession || !window.db) return;
+            window.db.ref('chats/' + window.currentActiveSession).push({
+                sender: 'admin',
+                type: 'text',
+                content: text,
+                time: Date.now()
+            });
+            inp.value = '';
+        };
+    </script>
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background: #f1f5f9; color: #1e293b; padding: 15px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header { background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 18px 24px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(37,99,235,0.2); margin-bottom: 20px; }
-        .header h1 { font-size: 18px; font-weight: 800; }
-        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
-        .stat-card span { font-size: 12px; color: #64748b; font-weight: 600; display: block; }
-        .stat-card strong { font-size: 20px; color: #1e40af; margin-top: 4px; display: block; }
-        .order-card { background: white; border-radius: 14px; padding: 16px; margin-bottom: 12px; border: 1.5px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; gap: 10px; }
-        .order-card.new-order { border-right: 5px solid #2563eb; background: #f8faff; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', Tahoma, sans-serif; }
+        body { background: #eff6ff; color: #1e293b; padding: 12px; }
+        .container { max-width: 850px; margin: 0 auto; }
+        
+        /* الهيدر الأنيق */
+        .header { background: linear-gradient(135deg, #1e40af, #2563eb); color: white; padding: 14px 18px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(37,99,235,0.25); margin-bottom: 15px; }
+        .header h1 { font-size: 16px; font-weight: 800; }
+        .header p { font-size: 11px; opacity: 0.9; margin-top: 2px; }
+        
+        /* كروت الإحصائيات */
+        .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        .stat-card { background: white; padding: 12px; border-radius: 12px; border: 1.5px solid #dbeafe; text-align: center; box-shadow: 0 2px 8px rgba(30,64,175,0.06); }
+        .stat-card span { font-size: 11.5px; color: #64748b; font-weight: 700; display: block; }
+        .stat-card strong { font-size: 22px; color: #1e40af; margin-top: 2px; display: block; }
+        
+        /* كارت الأوردر */
+        .order-card { background: white; border-radius: 16px; padding: 14px; margin-bottom: 12px; border: 1.5px solid #dbeafe; box-shadow: 0 4px 12px rgba(30,64,175,0.08); display: flex; flex-direction: column; gap: 8px; }
+        .order-card.new-order { border-right: 6px solid #2563eb; background: #ffffff; }
         .order-header { display: flex; justify-content: space-between; align-items: center; }
-        .badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        .badge { padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; }
         .badge-new { background: #dbeafe; color: #1e40af; }
         .badge-driver { background: #fef3c7; color: #b45309; }
         .badge-done { background: #dcfce7; color: #15803d; }
-        .order-details { font-size: 13px; color: #475569; line-height: 1.6; }
-        .order-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { padding: 8px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+        
+        .order-body-layout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .order-details { font-size: 12.5px; color: #475569; line-height: 1.6; }
+        
+        /* زر الشات في مكان الدائرة المحدد */
+        .btn-chat-badge {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 3px 10px rgba(2,132,199,0.3);
+        }
+        
+        /* أزرار العمليات */
+        .order-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .btn { padding: 7px 12px; border-radius: 8px; border: none; font-size: 11.5px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
         .btn-assign { background: #2563eb; color: white; }
         .btn-done { background: #10b981; color: white; }
-        .btn-delete { background: #fee2e2; color: #dc2626; }
-        .btn-call { background: #f1f5f9; color: #334155; }
-        .pulse-footer { animation: pulse-glow 2.5s infinite ease-in-out; text-align: center; padding: 20px 0; margin-top: 20px; border-top: 1px dashed #cbd5e1; }
-        .pulse-footer .dr { font-size: 14px; font-weight: 800; color: #1e40af; }
-        .pulse-footer .dev { font-size: 12px; font-weight: 700; color: #2563eb; }
+        .btn-delete { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .btn-call { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+        
+        /* فوتر النبض الموحد */
+        .pulse-footer { animation: pulse-glow 2.5s infinite ease-in-out; text-align: center; padding: 16px 0; margin-top: 15px; border-top: 1px dashed #bfdbfe; }
+        .pulse-footer .dr { font-size: 13px; font-weight: 800; color: #1e40af; }
+        .pulse-footer .dev { font-size: 11px; font-weight: 700; color: #2563eb; margin-top: 2px; }
         @keyframes pulse-glow {
-            0%, 100% { transform: scale(1); text-shadow: 0 0 6px rgba(37,99,235,0.3); }
-            50% { transform: scale(1.02); text-shadow: 0 0 12px rgba(37,99,235,0.6); }
+            0%, 100% { transform: scale(1); text-shadow: 0 0 4px rgba(37,99,235,0.3); }
+            50% { transform: scale(1.02); text-shadow: 0 0 10px rgba(37,99,235,0.6); }
         }
+
+        /* نافذة شات الإدارة الاحترافي */
+        .admin-chat-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 12px;
+        }
+        .admin-chat-card {
+            background: white;
+            width: 100%;
+            max-width: 480px;
+            height: 82vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+        }
+        .admin-chat-header {
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #eef2f7;
+        }
+        .admin-msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.5; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+        .admin-msg-client { align-self: flex-start; background: white; color: #0f172a; border-bottom-left-radius: 3px; border: 1px solid #e2e8f0; }
+        .admin-msg-admin { align-self: flex-end; background: #2563eb; color: white; border-bottom-right-radius: 3px; }
+        .admin-msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; cursor: pointer; border: 1px solid #cbd5e1; }
+        .admin-msg audio { width: 100%; max-width: 240px; height: 38px; margin-top: 5px; }
+        
+        .admin-chat-input { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #cbd5e1; background: white; align-items: center; }
+        .admin-chat-input input { flex: 1; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; outline: none; font-size: 12.5px; background: #f8fafc; }
+        .admin-chat-input input:focus { border-color: #2563eb; background: white; }
+        .admin-chat-input button { background: #1e40af; color: white; border: none; padding: 8px 16px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 12.5px; }
     </style>
 </head>
 <body>
@@ -53,9 +248,9 @@
     <div class="header">
         <div>
             <h1>💊 لوحة إدارة الطلبات</h1>
-            <p style="font-size: 12px; opacity: 0.9;">صيدلية د. هشام إسماعيل (الحرجة قبلي)</p>
+            <p>صيدلية د. هشام إسماعيل (الحرجة قبلي)</p>
         </div>
-        <button onclick="enableSound()" id="soundBtn" class="btn" style="background:white; color:#1e40af;">🔔 تفعيل صوت التنبيه</button>
+        <button onclick="window.enableSound()" id="soundBtn" class="btn" style="background:white; color:#1e40af;">🔔 تفعيل صوت التنبيه</button>
     </div>
 
     <div class="stats-cards">
@@ -74,105 +269,117 @@
     </div>
 </div>
 
+<!-- نافذة شات الإدارة المنبثقة -->
+<div class="admin-chat-overlay" id="adminChatModal">
+    <div class="admin-chat-card">
+        <div class="admin-chat-header">
+            <div>
+                <strong id="chatClientName" style="font-size:14.5px;">محادثة العميل</strong>
+                <p id="chatClientPhone" style="font-size: 11px; opacity: 0.9; margin-top:2px;"></p>
+            </div>
+            <button onclick="window.closeAdminChat()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✖</button>
+        </div>
+        <div class="admin-chat-messages" id="adminChatList"></div>
+        <div class="admin-chat-input">
+            <input type="text" id="adminReplyText" placeholder="اكتب رد الصيدلية للعميل..." onkeypress="if(event.key==='Enter') window.sendAdminReply()">
+            <button onclick="window.sendAdminReply()">إرسال</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAF--GbgtXOFouzlg082zwR_UXVrtDdxmI",
-      authDomain: "app1-e712c.firebaseapp.com",
-      projectId: "app1-e712c",
-      storageBucket: "app1-e712c.firebasestorage.app",
-      messagingSenderId: "413212540461",
-      appId: "1:413212540461:web:725c7295ce6de8a00f82a4",
-      databaseURL: "https://app1-e712c-default-rtdb.firebaseio.com"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    window.addEventListener('load', function() {
+        try {
+            var firebaseConfig = {
+                apiKey: "AIzaSyAF--GbgtXOFouzlg082zwR_UXVrtDdxmI",
+                authDomain: "app1-e712c.firebaseapp.com",
+                projectId: "app1-e712c",
+                storageBucket: "app1-e712c.firebasestorage.app",
+                messagingSenderId: "413212540461",
+                appId: "1:413212540461:web:725c7295ce6de8a00f82a4",
+                databaseURL: "https://app1-e712c-default-rtdb.firebaseio.com"
+            };
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            window.db = (typeof firebase !== 'undefined') ? firebase.database() : null;
 
-    let isSoundEnabled = false;
-    let audioCtx = null;
-    let initialLoad = true;
+            if (window.db) {
+                window.db.ref('orders').on('value', function(snapshot) {
+                    var data = snapshot.val();
+                    var list = document.getElementById('ordersList');
+                    if (!list) return;
 
-    function enableSound() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        isSoundEnabled = true;
-        document.getElementById('soundBtn').innerText = '✅ التنبيه الصوتي مفعل';
-        document.getElementById('soundBtn').style.background = '#dcfce7';
-        document.getElementById('soundBtn').style.color = '#15803d';
-    }
+                    if (!data) {
+                        list.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد أي طلبات حالياً</p>';
+                        updateCounts(0,0,0);
+                        return;
+                    }
 
-    function playBeep() {
-        if (!isSoundEnabled || !audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
-    }
+                    var cNew = 0, cDriver = 0, cDone = 0;
+                    var html = '';
 
-    db.ref('orders').on('value', snapshot => {
-        const data = snapshot.val();
-        const list = document.getElementById('ordersList');
+                    var keys = Object.keys(data).reverse();
+                    keys.forEach(function(key) {
+                        var o = data[key];
+                        var badgeClass = 'badge-new';
+                        if (o.status === 'جديد') cNew++;
+                        else if (o.status === 'مع المندوب') { cDriver++; badgeClass = 'badge-driver'; }
+                        else if (o.status === 'تم التسليم') { cDone++; badgeClass = 'badge-done'; }
 
-        if (!data) {
-            list.innerHTML = '<p style="text-align:center; color:#94a3b8; padding:30px;">لا توجد أي طلبات حالياً</p>';
-            updateCounts(0,0,0);
-            return;
+                        var sId = o.sessionId || ('order_' + key);
+
+                        html += `
+                            <div class="order-card ${o.status === 'جديد' ? 'new-order' : ''}">
+                                <div class="order-header">
+                                    <strong style="font-size:14.5px;">👤 ${o.name}</strong>
+                                    <span class="badge ${badgeClass}">${o.status}</span>
+                                </div>
+
+                                <div class="order-body-layout">
+                                    <div class="order-details">
+                                        <p>📍 <strong>العنوان:</strong> ${o.address}</p>
+                                        <p>🕒 <strong>التوقيت:</strong> ${o.time || '--'}</p>
+                                    </div>
+                                    
+                                    <button class="btn-chat-badge" onclick="window.openAdminChat('${sId}', '${o.name}', '${o.phone}')">
+                                        💬 الشات والروشتات 📷🎙️
+                                    </button>
+                                </div>
+
+                                <div class="order-actions">
+                                    <a href="tel:${o.phone}" class="btn btn-call">📞 ${o.phone}</a>
+                                    ${o.status === 'جديد' ? `<button class="btn btn-assign" onclick="window.updateStatus('${key}', 'مع المندوب')">🚴 إسناد للمندوب</button>` : ''}
+                                    ${o.status === 'مع المندوب' ? `<button class="btn btn-done" onclick="window.updateStatus('${key}', 'تم التسليم')">✅ تم التسليم</button>` : ''}
+                                    <button class="btn btn-delete" onclick="window.deleteOrder('${key}')">🗑️ حذف</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    if (!window.initialLoad && cNew > 0) window.playBeep();
+                    window.initialLoad = false;
+
+                    list.innerHTML = html;
+                    updateCounts(cNew, cDriver, cDone);
+                });
+            }
+        } catch(e) {
+            console.log("خطأ في تشغيل الإدارة:", e);
         }
-
-        let cNew = 0, cDriver = 0, cDone = 0;
-        let html = '';
-
-        const keys = Object.keys(data).reverse();
-        keys.forEach(key => {
-            const o = data[key];
-            let badgeClass = 'badge-new';
-            if (o.status === 'جديد') cNew++;
-            else if (o.status === 'مع المندوب') { cDriver++; badgeClass = 'badge-driver'; }
-            else if (o.status === 'تم التسليم') { cDone++; badgeClass = 'badge-done'; }
-
-            html += `
-                <div class="order-card ${o.status === 'جديد' ? 'new-order' : ''}">
-                    <div class="order-header">
-                        <strong>👤 ${o.name}</strong>
-                        <span class="badge ${badgeClass}">${o.status}</span>
-                    </div>
-                    <div class="order-details">
-                        <p>📍 <strong>العنوان:</strong> ${o.address}</p>
-                        <p>🕒 <strong>التوقيت:</strong> ${o.time || '--'}</p>
-                    </div>
-                    <div class="order-actions">
-                        <a href="tel:${o.phone}" class="btn btn-call">📞 ${o.phone}</a>
-                        ${o.status === 'جديد' ? `<button class="btn btn-assign" onclick="updateStatus('${key}', 'مع المندوب')">🚴 إسناد للمندوب</button>` : ''}
-                        ${o.status === 'مع المندوب' ? `<button class="btn btn-done" onclick="updateStatus('${key}', 'تم التسليم')">✅ تم التسليم</button>` : ''}
-                        <button class="btn btn-delete" onclick="deleteOrder('${key}')">🗑️ حذف</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        if (!initialLoad && cNew > 0) playBeep();
-        initialLoad = false;
-
-        list.innerHTML = html;
-        updateCounts(cNew, cDriver, cDone);
     });
 
     function updateCounts(n, dr, dn) {
-        document.getElementById('countNew').innerText = n;
-        document.getElementById('countDriver').innerText = dr;
-        document.getElementById('countDone').innerText = dn;
+        var nEl = document.getElementById('countNew');
+        var drEl = document.getElementById('countDriver');
+        var dnEl = document.getElementById('countDone');
+        if (nEl) nEl.innerText = n;
+        if (drEl) drEl.innerText = dr;
+        if (dnEl) dnEl.innerText = dn;
     }
-
-    function updateStatus(id, st) { db.ref('orders/' + id).update({ status: st }); }
-    function deleteOrder(id) { if (confirm('هل تريد مسح هذا الأوردر نهائياً؟')) db.ref('orders/' + id).remove(); }
 </script>
 </body>
 </html>
