@@ -34,7 +34,6 @@
         .order-body-layout { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .order-details { font-size: 13px; color: #475569; line-height: 1.6; }
         
-        /* زر الشات في مكان الدائرة */
         .btn-chat-badge {
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: white;
@@ -64,7 +63,6 @@
             50% { transform: scale(1.02); text-shadow: 0 0 12px rgba(37,99,235,0.6); }
         }
 
-        /* نافذة شات الإدارة المنبثقة */
         .admin-chat-overlay {
             position: fixed;
             inset: 0;
@@ -240,7 +238,6 @@
                             <p>🕒 <strong>التوقيت:</strong> ${o.time || '--'}</p>
                         </div>
                         
-                        <!-- زر الشات والروشتات في مكان الدائرة -->
                         <button class="btn-chat-badge" onclick="openAdminChat('${sId}', '${o.name}', '${o.phone}')">
                             💬 الشات والروشتات 📷🎙️
                         </button>
@@ -272,7 +269,6 @@
     function updateStatus(id, st) { db.ref('orders/' + id).update({ status: st }); }
     function deleteOrder(id) { if (confirm('هل تريد مسح هذا الأوردر نهائياً؟')) db.ref('orders/' + id).remove(); }
 
-    /* تشغيل شات الإدارة */
     function openAdminChat(sessionId, name, phone) {
         currentActiveSession = sessionId;
         document.getElementById('chatClientName').innerText = '💬 محادثة العميل: ' + name;
