@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>صيدلية د. هشام إسماعيل - طلب دواء</title>
     
-    <!-- إعدادات وأيقونة التطبيق للشاشة الرئيسية -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -53,9 +52,8 @@
         .input-box:focus { border-color: #2563eb; background: #ffffff; }
         .btn-gps { width: 100%; background: #eff6ff; color: #1e40af; border: 1.5px dashed #3b82f6; padding: 5px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 10.5px; }
         .gps-status { font-size: 9px; text-align: center; font-weight: bold; display: none; }
-        #clientMap { width: 100%; height: 95px; border-radius: 10px; border: 1.5px solid #bfdbfe; }
+        #clientMap { width: 100%; height: 95px; border-radius: 10px; border: 1.5px solid #bfdbfe; background: #e2e8f0; }
         
-        /* زر المحادثة وإرسال الروشتة */
         .btn-open-chat {
             background: linear-gradient(135deg, #f0fdf4, #dcfce7);
             color: #15803d;
@@ -74,7 +72,6 @@
             box-shadow: 0 2px 5px rgba(21,128,61,0.1);
         }
 
-        /* زر الاتصال بالصيدلية */
         .btn-call-pharmacy {
             display: flex;
             flex-direction: column;
@@ -107,7 +104,7 @@
             50% { transform: scale(1.03); text-shadow: 0 0 10px rgba(37,99,235,0.7); }
         }
 
-        /* نافذة الشات المنبثقة */
+        /* نافذة الشات الاحترافي */
         .chat-modal {
             position: absolute;
             inset: 0;
@@ -115,7 +112,7 @@
             border-radius: 20px;
             display: none;
             flex-direction: column;
-            z-index: 2000;
+            z-index: 9999;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
@@ -217,12 +214,10 @@
     </div>
 
     <div>
-        <!-- زر فتح الشات والروشتات -->
         <button class="btn-open-chat" onclick="openChat()">
             💬 محادثة الصيدلية (روشتة 📷 / صوت 🎙️ / شات مباشر)
         </button>
 
-        <!-- خانة الاتصال بالصيدلية -->
         <a href="tel:01109690240" class="btn-call-pharmacy">
             <div class="call-phone">📞 01109690240</div>
             <div class="call-text">اتصل بالصيدلية لتحديد تفاصيل طلبك</div>
@@ -269,76 +264,62 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAF--GbgtXOFouzlg082zwR_UXVrtDdxmI",
-      authDomain: "app1-e712c.firebaseapp.com",
-      projectId: "app1-e712c",
-      storageBucket: "app1-e712c.firebasestorage.app",
-      messagingSenderId: "413212540461",
-      appId: "1:413212540461:web:725c7295ce6de8a00f82a4",
-      databaseURL: "https://app1-e712c-default-rtdb.firebaseio.com"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.database();
+    // 1. نظام الذاكرة الآمنة لمنع التوقف
+    function safeGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
+    function safeRemove(k) { try { localStorage.removeItem(k); } catch(e) {} }
 
-    // مقر الصيدلية بالحرجة قبلي كبداية افتراضية
     let clientLat = 26.201767;
     let clientLng = 31.938367;
+    let clientMap = null;
+    let marker = null;
+    let db = null;
 
-    // توليد معرف جلسة فريد لكل عميل لربط محادثته بطلباته
-    let mySessionId = localStorage.getItem('chat_session_id');
+    let mySessionId = safeGet('chat_session_id');
     if (!mySessionId) {
         mySessionId = 'chat_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('chat_session_id', mySessionId);
+        safeSet('chat_session_id', mySessionId);
     }
 
-    document.getElementById('custName').value = localStorage.getItem('cust_name') || '';
-    document.getElementById('custPhone').value = localStorage.getItem('cust_phone') || '';
-    checkActiveOrder();
+    // 2. دوال الأزرار معرفة مسبقاً وتعمل فوراً
+    function openChat() {
+        const m = document.getElementById('chatModal');
+        if (m) {
+            m.style.display = 'flex';
+            listenToMessages();
+        }
+    }
 
-    const clientMap = L.map('clientMap', { zoomControl: false }).setView([clientLat, clientLng], 14);
-    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }).addTo(clientMap);
-    let marker = L.marker([clientLat, clientLng], {draggable: true}).addTo(clientMap);
-    marker.bindPopup("منزلي 🏠 (اسحبه لتحديد الدقة)").openPopup();
+    function closeChat() {
+        const m = document.getElementById('chatModal');
+        if (m) m.style.display = 'none';
+    }
 
-    clientMap.on('click', e => { 
-        clientLat = e.latlng.lat; 
-        clientLng = e.latlng.lng; 
-        marker.setLatLng([clientLat, clientLng]); 
-    });
-    marker.on('dragend', () => { 
-        const p = marker.getLatLng(); 
-        clientLat = p.lat; 
-        clientLng = p.lng; 
-    });
+    function checkActiveOrder() {
+        const orderId = safeGet('my_active_order');
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) cancelBtn.style.display = orderId ? 'block' : 'none';
+    }
 
     function getGPS() {
         const s = document.getElementById('gpsStatus');
-        s.style.display = 'block'; 
-        s.innerText = "جاري التقاط إحداثيات GPS...";
-        s.style.color = "#1d4ed8";
-
+        if (s) { s.style.display = 'block'; s.innerText = "جاري التقاط إحداثيات GPS..."; s.style.color = "#1d4ed8"; }
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => {
                     const acc = Math.round(pos.coords.accuracy);
                     if (acc > 3000) {
-                        s.innerText = `⚠️ تم الالتقاط عبر النت (${Math.round(acc/1000)} كم خطأ) - افتح من الموبايل أو حرّك الدبوس`;
-                        s.style.color = "#d97706";
+                        if (s) { s.innerText = `⚠️ تم الالتقاط عبر النت (${Math.round(acc/1000)} كم خطأ) - افتح من الموبايل أو حرّك الدبوس`; s.style.color = "#d97706"; }
                     } else {
                         clientLat = pos.coords.latitude; 
                         clientLng = pos.coords.longitude;
-                        clientMap.setView([clientLat, clientLng], 16);
-                        marker.setLatLng([clientLat, clientLng]);
-                        s.innerText = `✅ تم تحديد موقعك الحقيقي بدقة (${acc} متر)`;
-                        s.style.color = "#16a34a";
+                        if (clientMap) clientMap.setView([clientLat, clientLng], 16);
+                        if (marker) marker.setLatLng([clientLat, clientLng]);
+                        if (s) { s.innerText = `✅ تم تحديد موقعك الحقيقي بدقة (${acc} متر)`; s.style.color = "#16a34a"; }
                     }
                 },
                 () => { 
-                    s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; 
-                    s.style.color = "#dc2626";
+                    if (s) { s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; s.style.color = "#dc2626"; }
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
@@ -351,8 +332,10 @@
         const address = document.getElementById('custAddress').value.trim();
         if (!name || !phone) { alert('يرجى كتابة الاسم ورقم الهاتف'); return; }
 
-        localStorage.setItem('cust_name', name);
-        localStorage.setItem('cust_phone', phone);
+        safeSet('cust_name', name);
+        safeSet('cust_phone', phone);
+
+        if (!db) { alert('جاري الاتصال بالسيرفر.. تأكد من الإنترنت'); return; }
 
         const newRef = db.ref('orders').push();
         newRef.set({
@@ -361,68 +344,30 @@
             sessionId: mySessionId,
             time: new Date().toLocaleTimeString('ar-EG')
         }).then(() => {
-            localStorage.setItem('my_active_order', newRef.key);
+            safeSet('my_active_order', newRef.key);
             alert('🚀 تم إرسال طلبك لصيدلية د. هشام إسماعيل بنجاح!');
             checkActiveOrder();
+        }).catch(err => {
+            alert('تعذر إرسال الطلب: ' + err.message);
         });
     }
 
-    function checkActiveOrder() {
-        const orderId = localStorage.getItem('my_active_order');
-        const cancelBtn = document.getElementById('cancelBtn');
-        if (cancelBtn) {
-            cancelBtn.style.display = orderId ? 'block' : 'none';
-        }
-    }
-
     function cancelMyOrder() {
-        const orderId = localStorage.getItem('my_active_order');
-        if (!orderId) return;
+        const orderId = safeGet('my_active_order');
+        if (!orderId || !db) return;
         if (confirm('هل أنت متأكد من رغبتك في إلغاء هذا الطلب؟')) {
             db.ref('orders/' + orderId).remove().then(() => {
-                localStorage.removeItem('my_active_order');
+                safeRemove('my_active_order');
                 alert('تم إلغاء الطلب بنجاح ❌');
                 checkActiveOrder();
             });
         }
     }
 
-    /* نظام الشات والمحادثة المباشرة */
-    function openChat() {
-        document.getElementById('chatModal').style.display = 'flex';
-        listenToMessages();
-    }
-
-    function closeChat() {
-        document.getElementById('chatModal').style.display = 'none';
-    }
-
-    function listenToMessages() {
-        db.ref('chats/' + mySessionId).on('value', snapshot => {
-            const data = snapshot.val();
-            const container = document.getElementById('chatMessages');
-            container.innerHTML = '<div class="msg msg-admin">أهلاً بك في صيدلية د. هشام إسماعيل! تفضل بإرسال الروشتة أو تسجيل صوتي بالعلاج وسنرد عليك فوراً. 💊</div>';
-            if (!data) return;
-            Object.values(data).forEach(m => {
-                const div = document.createElement('div');
-                div.className = 'msg ' + (m.sender === 'client' ? 'msg-client' : 'msg-admin');
-                if (m.type === 'text') {
-                    div.innerText = m.content;
-                } else if (m.type === 'image') {
-                    div.innerHTML = `<img src="${m.content}" />`;
-                } else if (m.type === 'audio') {
-                    div.innerHTML = `<audio controls src="${m.content}"></audio>`;
-                }
-                container.appendChild(div);
-            });
-            container.scrollTop = container.scrollHeight;
-        });
-    }
-
     function sendTextMessage() {
         const inp = document.getElementById('msgText');
         const text = inp.value.trim();
-        if (!text) return;
+        if (!text || !db) return;
         const name = document.getElementById('custName').value.trim() || 'عميل';
         db.ref('chats/' + mySessionId).push({ sender: 'client', name: name, type: 'text', content: text, time: Date.now() });
         inp.value = '';
@@ -430,7 +375,7 @@
 
     function sendImage(e) {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file || !db) return;
         const reader = new FileReader();
         reader.onload = function(evt) {
             const img = new Image();
@@ -438,4 +383,58 @@
                 const canvas = document.createElement('canvas');
                 const maxDim = 600;
                 let w = img.width, h = img.height;
-                if (w
+                if (w > h && w > maxDim) { h *= maxDim / w; w = maxDim; }
+                else if (h > maxDim) { w *= maxDim / h; h = maxDim; }
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+                db.ref('chats/' + mySessionId).push({ sender: 'client', type: 'image', content: compressedBase64, time: Date.now() });
+            };
+            img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let recInterval = null;
+    let recSeconds = 0;
+
+    function toggleVoiceRecord() {
+        const btn = document.getElementById('voiceBtn');
+        const timerEl = document.getElementById('recordingTimer');
+
+        if (!isRecording) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('تسجيل الصوت يتطلب صلاحية الميكروفون بالمتصفح');
+                return;
+            }
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const r = new FileReader();
+                    r.onload = () => {
+                        if (db) {
+                            db.ref('chats/' + mySessionId).push({
+                                sender: 'client',
+                                type: 'audio',
+                                content: r.result,
+                                time: Date.now()
+                            });
+                        }
+                    };
+                    r.readAsDataURL(blob);
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                recSeconds = 0;
+                btn.classList.add('recording-pulse');
+                btn.innerText = '⏹️';
+                
+                timerEl.style.display = 'inline-block';
+                timerEl.innerTex
