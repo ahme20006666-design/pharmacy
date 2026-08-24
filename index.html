@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>صيدلية د. هشام إسماعيل - طلب دواء</title>
     
+    <!-- إعدادات وأيقونة التطبيق للشاشة الرئيسية -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,6 +55,7 @@
         .gps-status { font-size: 9px; text-align: center; font-weight: bold; display: none; }
         #clientMap { width: 100%; height: 95px; border-radius: 10px; border: 1.5px solid #bfdbfe; background: #e2e8f0; }
         
+        /* زر فتح الشات والروشتات */
         .btn-open-chat {
             background: linear-gradient(135deg, #f0fdf4, #dcfce7);
             color: #15803d;
@@ -72,6 +74,7 @@
             box-shadow: 0 2px 6px rgba(21,128,61,0.12);
         }
 
+        /* زر الاتصال بالصيدلية باللون الأزرق المتناسق */
         .btn-call-pharmacy {
             display: flex;
             flex-direction: column;
@@ -80,16 +83,28 @@
             background: linear-gradient(135deg, #1d4ed8, #2563eb);
             color: white;
             text-decoration: none;
-            padding: 4px 10px;
+            padding: 5px 10px;
             border-radius: 10px;
             box-shadow: 0 3px 8px rgba(29,78,216,0.25);
-            margin: 2px 0;
+            margin: 3px 0;
             cursor: pointer;
             transition: transform 0.1s;
         }
-        .btn-call-pharmacy:active { transform: scale(0.98); }
-        .btn-call-pharmacy .call-phone { font-size: 12px; font-weight: 800; letter-spacing: 1px; direction: ltr; }
-        .btn-call-pharmacy .call-text { font-size: 9px; opacity: 0.95; font-weight: 600; margin-top: 1px; }
+        .btn-call-pharmacy:active {
+            transform: scale(0.98);
+        }
+        .btn-call-pharmacy .call-phone {
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            direction: ltr;
+        }
+        .btn-call-pharmacy .call-text {
+            font-size: 9.5px;
+            opacity: 0.95;
+            font-weight: 600;
+            margin-top: 1px;
+        }
 
         .actions { display: flex; gap: 5px; margin-top: 2px; }
         .btn-submit { flex: 2; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; border: none; padding: 8px; border-radius: 10px; font-size: 12.5px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(29,78,216,0.3); }
@@ -104,6 +119,7 @@
             50% { transform: scale(1.03); text-shadow: 0 0 10px rgba(37,99,235,0.7); }
         }
 
+        /* نافذة الشات الأنيقة */
         .chat-modal {
             position: absolute;
             inset: 0;
@@ -208,24 +224,26 @@
         <input type="tel" id="custPhone" class="input-box" placeholder="رقم الهاتف (010xxxxxxxx)">
         <input type="text" id="custAddress" class="input-box" placeholder="القرية / النجع / علامة مميزة">
         
-        <button class="btn-gps" onclick="window.getGPS()">📍 تحديد موقعي الدقيق (GPS)</button>
+        <button class="btn-gps" onclick="getGPS()">📍 تحديد موقعي الدقيق (GPS)</button>
         <div id="gpsStatus" class="gps-status"></div>
         <div id="clientMap"></div>
     </div>
 
     <div>
-        <button class="btn-open-chat" onclick="window.openChat()">
+        <!-- زر فتح الشات المباشر -->
+        <button class="btn-open-chat" onclick="openChat()">
             💬 محادثة الصيدلية (روشتة 📷 / صوت 🎙️ / شات مباشر)
         </button>
 
+        <!-- خانة الاتصال بالصيدلية -->
         <a href="tel:01109690240" class="btn-call-pharmacy">
             <div class="call-phone">📞 01109690240</div>
-            <div class="call-text">اتصل بالصيدلية لتحديث تفاصيل طلبك</div>
+            <div class="call-text">اتصل بالصيدلية لتحديد تفاصيل طلبك</div>
         </a>
 
         <div class="actions">
-            <button class="btn-submit" id="submitBtn" onclick="window.sendOrder()">تأكيد وإرسال الطلب 🚀</button>
-            <button class="btn-cancel" id="cancelBtn" onclick="window.cancelMyOrder()">❌ إلغاء الطلب</button>
+            <button class="btn-submit" id="submitBtn" onclick="sendOrder()">تأكيد وإرسال الطلب 🚀</button>
+            <button class="btn-cancel" id="cancelBtn" onclick="cancelMyOrder()">❌ إلغاء الطلب</button>
         </div>
 
         <div class="pulse-footer">
@@ -241,7 +259,7 @@
                 <strong>💬 محادثة صيدلية الدكتور</strong>
                 <p style="font-size: 9.5px; opacity: 0.9;">متصل الآن للرد على استفسارك وروشتاك</p>
             </div>
-            <button onclick="window.closeChat()" class="btn-close-chat">✖</button>
+            <button onclick="closeChat()" class="btn-close-chat">✖</button>
         </div>
 
         <div class="chat-messages" id="chatMessages">
@@ -250,11 +268,11 @@
 
         <div class="chat-bar">
             <span id="recordingTimer" class="rec-timer">00:00</span>
-            <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="window.sendImage(event)">
+            <input type="file" id="imgInput" accept="image/*" style="display:none;" onchange="sendImage(event)">
             <button class="chat-btn" style="background:#0284c7;" onclick="document.getElementById('imgInput').click()" title="إرسال صورة روشتة">📷</button>
-            <button class="chat-btn" id="voiceBtn" style="background:#16a34a;" onclick="window.toggleVoiceRecord()" title="تسجيل صوت">🎙️</button>
-            <input type="text" id="msgText" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') window.sendTextMessage()">
-            <button class="chat-btn" onclick="window.sendTextMessage()" title="إرسال">➤</button>
+            <button class="chat-btn" id="voiceBtn" style="background:#16a34a;" onclick="toggleVoiceRecord()" title="تسجيل صوت">🎙️</button>
+            <input type="text" id="msgText" placeholder="اكتب رسالتك..." onkeypress="if(event.key==='Enter') sendTextMessage()">
+            <button class="chat-btn" onclick="sendTextMessage()" title="إرسال">➤</button>
         </div>
     </div>
 </div>
@@ -264,84 +282,80 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // تخزين محلي آمن ومضمون 100% ضد أي توقف
-    window.safeGet = function(k) { try { return localStorage.getItem(k); } catch(e) { return window['mem_' + k] || null; } };
-    window.safeSet = function(k, v) { try { localStorage.setItem(k, v); } catch(e) { window['mem_' + k] = v; } };
-    window.safeRemove = function(k) { try { localStorage.removeItem(k); } catch(e) { delete window['mem_' + k]; } };
+    // تعريف كافة الدوال فوراً في النطاق العام لضمان عمل الأزرار 100%
+    let db = null;
+    let clientLat = 26.201767;
+    let clientLng = 31.938367;
+    let clientMap = null;
+    let marker = null;
 
-    window.clientLat = 26.201767;
-    window.clientLng = 31.938367;
-    window.db = null;
-    window.clientMap = null;
-    window.marker = null;
-
-    window.mySessionId = window.safeGet('chat_session_id');
-    if (!window.mySessionId) {
-        window.mySessionId = 'chat_' + Math.random().toString(36).substring(2, 11);
-        window.safeSet('chat_session_id', window.mySessionId);
+    let mySessionId = localStorage.getItem('chat_session_id');
+    if (!mySessionId) {
+        mySessionId = 'chat_' + Math.random().toString(36).substring(2, 11);
+        localStorage.setItem('chat_session_id', mySessionId);
     }
 
-    // تعريف الدوال فوراً برمجياً وربطها بالنافذة لضمان استجابة الأزرار
-    window.openChat = function() {
-        var m = document.getElementById('chatModal');
+    function openChat() {
+        const m = document.getElementById('chatModal');
         if (m) {
             m.style.display = 'flex';
-            if (window.listenToMessages) window.listenToMessages();
+            listenToMessages();
         }
-    };
+    }
 
-    window.closeChat = function() {
-        var m = document.getElementById('chatModal');
+    function closeChat() {
+        const m = document.getElementById('chatModal');
         if (m) m.style.display = 'none';
-    };
+    }
 
-    window.checkActiveOrder = function() {
-        var orderId = window.safeGet('my_active_order');
-        var cancelBtn = document.getElementById('cancelBtn');
+    function checkActiveOrder() {
+        const orderId = localStorage.getItem('my_active_order');
+        const cancelBtn = document.getElementById('cancelBtn');
         if (cancelBtn) {
             cancelBtn.style.display = orderId ? 'block' : 'none';
         }
-    };
+    }
 
-    window.cancelMyOrder = function() {
-        var orderId = window.safeGet('my_active_order');
+    function cancelMyOrder() {
+        const orderId = localStorage.getItem('my_active_order');
         if (!orderId) return;
         if (confirm('هل أنت متأكد من رغبتك في إلغاء هذا الطلب؟')) {
-            if (window.db) {
-                window.db.ref('orders/' + orderId).remove().then(function() {
-                    window.safeRemove('my_active_order');
+            if (db) {
+                db.ref('orders/' + orderId).remove().then(() => {
+                    localStorage.removeItem('my_active_order');
                     alert('تم إلغاء الطلب بنجاح ❌');
-                    window.checkActiveOrder();
+                    checkActiveOrder();
                 });
             } else {
-                window.safeRemove('my_active_order');
+                localStorage.removeItem('my_active_order');
                 alert('تم إلغاء الطلب بنجاح ❌');
-                window.checkActiveOrder();
+                checkActiveOrder();
             }
         }
-    };
+    }
 
-    window.getGPS = function() {
-        var s = document.getElementById('gpsStatus');
+    function getGPS() {
+        const s = document.getElementById('gpsStatus');
         if (s) {
             s.style.display = 'block'; 
             s.innerText = "جاري التقاط إحداثيات GPS...";
             s.style.color = "#1d4ed8";
         }
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                function(pos) {
-                    var acc = Math.round(pos.coords.accuracy);
-                    window.clientLat = pos.coords.latitude; 
-                    window.clientLng = pos.coords.longitude;
-                    if (window.clientMap) window.clientMap.setView([window.clientLat, window.clientLng], 16);
-                    if (window.marker) window.marker.setLatLng([window.clientLat, window.clientLng]);
+                pos => {
+                    const acc = Math.round(pos.coords.accuracy);
+                    clientLat = pos.coords.latitude; 
+                    clientLng = pos.coords.longitude;
+                    if (clientMap) clientMap.setView([clientLat, clientLng], 16);
+                    if (marker) marker.setLatLng([clientLat, clientLng]);
                     if (s) {
-                        s.innerText = "✅ تم تحديد موقعك الحقيقي بدقة (" + acc + " متر)";
+                        s.innerText = `✅ تم تحديد موقعك الحقيقي بدقة (${acc} متر)`;
                         s.style.color = "#16a34a";
                     }
                 },
-                function() { 
+                () => { 
                     if (s) {
                         s.innerText = "⚠️ تعذر أخذ GPS تلقائياً، حدد مكانك بالخريطة"; 
                         s.style.color = "#dc2626";
@@ -350,88 +364,90 @@
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
-    };
+    }
 
-    window.sendOrder = function() {
-        var nameField = document.getElementById('custName');
-        var phoneField = document.getElementById('custPhone');
-        var addressField = document.getElementById('custAddress');
-        
-        var name = nameField ? nameField.value.trim() : '';
-        var phone = phoneField ? phoneField.value.trim() : '';
-        var address = addressField ? addressField.value.trim() : '';
-
+    function sendOrder() {
+        const name = document.getElementById('custName').value.trim();
+        const phone = document.getElementById('custPhone').value.trim();
+        const address = document.getElementById('custAddress').value.trim();
         if (!name || !phone) { alert('يرجى كتابة الاسم ورقم الهاتف'); return; }
 
-        window.safeSet('cust_name', name);
-        window.safeSet('cust_phone', phone);
+        localStorage.setItem('cust_name', name);
+        localStorage.setItem('cust_phone', phone);
 
-        if (!window.db) { alert('جاري الاتصال بالسيرفر.. انتظر ثانية واحدة'); return; }
+        if (!db) { alert('جاري الاتصال بقاعدة البيانات.. حاول مجدداً بعد ثانية'); return; }
 
-        var newRef = window.db.ref('orders').push();
+        const newRef = db.ref('orders').push();
         newRef.set({
             name: name, phone: phone, address: address || "الحرجة / البلينا",
-            lat: window.clientLat, lng: window.clientLng, status: "جديد",
-            sessionId: window.mySessionId,
+            lat: clientLat, lng: clientLng, status: "جديد",
+            sessionId: mySessionId,
             time: new Date().toLocaleTimeString('ar-EG')
-        }).then(function() {
-            window.safeSet('my_active_order', newRef.key);
+        }).then(() => {
+            localStorage.setItem('my_active_order', newRef.key);
             alert('🚀 تم إرسال طلبك لصيدلية د. هشام إسماعيل بنجاح!');
-            window.checkActiveOrder();
-        }).catch(function(err) {
+            checkActiveOrder();
+        }).catch(err => {
             alert('خطأ في إرسال الطلب: ' + err.message);
         });
-    };
+    }
 
-    window.sendTextMessage = function() {
-        var inp = document.getElementById('msgText');
-        if (!inp || !window.db) return;
-        var text = inp.value.trim();
-        if (!text) return;
-        var nameField = document.getElementById('custName');
-        var name = (nameField && nameField.value.trim()) ? nameField.value.trim() : 'عميل';
-        window.db.ref('chats/' + window.mySessionId).push({ sender: 'client', name: name, type: 'text', content: text, time: Date.now() });
+    function listenToMessages() {
+        if (!db) return;
+        db.ref('chats/' + mySessionId).on('value', snapshot => {
+            const data = snapshot.val();
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            container.innerHTML = '<div class="msg msg-admin">أهلاً بك في صيدلية د. هشام إسماعيل! تفضل بإرسال الروشتة أو تسجيل صوتي بالعلاج وسنرد عليك فوراً. 💊</div>';
+            if (!data) return;
+            Object.values(data).forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'msg ' + (m.sender === 'client' ? 'msg-client' : 'msg-admin');
+                if (m.type === 'text') {
+                    div.innerText = m.content;
+                } else if (m.type === 'image') {
+                    div.innerHTML = `<img src="${m.content}" onclick="window.open(this.src)" title="اضغط للتكبير" />`;
+                } else if (m.type === 'audio') {
+                    div.innerHTML = `<audio controls src="${m.content}"></audio>`;
+                }
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        });
+    }
+
+    function sendTextMessage() {
+        const inp = document.getElementById('msgText');
+        const text = inp.value.trim();
+        if (!text || !db) return;
+        const name = document.getElementById('custName').value.trim() || 'عميل';
+        db.ref('chats/' + mySessionId).push({ sender: 'client', name: name, type: 'text', content: text, time: Date.now() });
         inp.value = '';
-    };
+    }
 
-    window.sendImage = function(e) {
-        var file = e.target.files[0];
-        if (!file || !window.db) return;
-        var reader = new FileReader();
+    function sendImage(e) {
+        const file = e.target.files[0];
+        if (!file || !db) return;
+        const reader = new FileReader();
         reader.onload = function(evt) {
-            var img = new Image();
+            const img = new Image();
             img.onload = function() {
-                var canvas = document.createElement('canvas');
-                var maxDim = 700;
-                var w = img.width, h = img.height;
+                const canvas = document.createElement('canvas');
+                const maxDim = 700;
+                let w = img.width, h = img.height;
                 if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
                 else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
                 canvas.width = w; canvas.height = h;
-                var ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                var compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
-                window.db.ref('chats/' + window.mySessionId).push({ sender: 'client', type: 'image', content: compressedBase64, time: Date.now() });
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
+                db.ref('chats/' + mySessionId).push({ sender: 'client', type: 'image', content: compressedBase64, time: Date.now() });
             };
             img.src = evt.target.result;
         };
         reader.readAsDataURL(file);
         e.target.value = '';
-    };
+    }
 
-    var mediaRecorder = null;
-    var audioChunks = [];
-    var isRecording = false;
-    var recInterval = null;
-    var recSeconds = 0;
-
-    window.toggleVoiceRecord = function() {
-        var btn = document.getElementById('voiceBtn');
-        var timerEl = document.getElementById('recordingTimer');
-
-        if (!isRecording) {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('متصفحك لا يدعم تسجيل الصوت');
-                return;
-            }
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-                mediaRecorder = new MediaRecorder(stream)
+    let mediaRecorder = null;
+    let audioChunks 
